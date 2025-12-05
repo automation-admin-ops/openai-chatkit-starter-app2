@@ -9,7 +9,7 @@ type CreateSessionBody = {
   workflow?: WorkflowData;
 };
 
-type ChatKitResponseWithSecret = {
+type ChatKitResponse = {
   client_secret?: string;
 };
 
@@ -25,32 +25,41 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // 🟢 PUBLICZNY identyfikator historii per workflow
+    const userId: string = `public-${workflow.id}`;
+
     const client = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
       defaultHeaders: {
         "OpenAI-Beta": "chatkit_beta=v1",
+        "OpenAI-ChatKit-Hosted": "session",
+        "X-OpenAI-ChatKit-User": userId,
+        "X-OpenAI-ChatKit-Workflow": workflow.id,
       },
     });
 
-    // 🟢 PUBLICZNA historia per workflow
-    const userId: string = `public-${workflow.id}`;
-
-    const result: ChatKitResponseWithSecret = (await client.chat.completions.create({
+    const result = (await client.chat.completions.create({
       model: "gpt-4.1-mini",
-      messages: [
-        { role: "system", content: "You are an assistant accessible from a public anonymous session." },
-        { role: "user", content: "initialize" },
-      ],
-      session: {
-        user: userId,
-        workflow_id: workflow.id,
-      },
-    })) as unknown as ChatKitResponseWithSecret;
 
-    const clientSecret = result?.client_secret;
+      // 👇 Musi być body startujące sesję
+      messages: [
+        { role: "system", content: "Initialize chat session." },
+        { role: "user", content: "init" },
+      ],
+
+      // 👇 Konfiguracja sesji musi iść w extra_body
+      extra_body: {
+        session: {
+          user: userId,
+          workflow_id: workflow.id,
+        },
+      },
+    })) as unknown as ChatKitResponse;
+
+    const clientSecret = result.client_secret;
     if (!clientSecret || typeof clientSecret !== "string") {
       return NextResponse.json(
-        { error: "Missing client secret in ChatKit response." },
+        { error: "Missing client secret in response." },
         { status: 500 }
       );
     }
@@ -58,10 +67,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ client_secret: clientSecret });
   } catch (error) {
     console.error("ChatKit session error:", error);
-
-    const message =
-      error instanceof Error ? error.message : "Unknown error while creating ChatKit session.";
-
+    const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
