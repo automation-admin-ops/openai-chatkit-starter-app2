@@ -1,13 +1,21 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChatKit, useChatKit } from "@openai/chatkit-react";
 import { ErrorOverlay } from "./ErrorOverlay";
 import type { ColorScheme } from "@/hooks/useColorScheme";
-import type { FactAction } from "./FactTypes"; // jeśli nie masz, usuń ten import i użyj type inline
+
+export type FactAction = {
+  type: "save";
+  factId: string;
+  factText: string;
+};
 
 type ChatKitPanelProps = {
-  workflow: string;                         // 👈 NOWY, obowiązkowy
+  workflow: string;                         // 👈 NOW required
   theme: ColorScheme;
   onWidgetAction: (action: FactAction) => Promise<void>;
   onResponseEnd: () => void;
@@ -61,7 +69,7 @@ export function ChatKitPanel({
     };
   }, []);
 
-  // 👉 Load ChatKit widget script
+  // 👉 Load ChatKit JS Widget
   useEffect(() => {
     if (!isBrowser) return;
 
@@ -114,7 +122,7 @@ export function ChatKitPanel({
     };
   }, [scriptStatus, setErrorState]);
 
-  // 👉 Initialize Hosted Session
+  // 👉 Initialize Hosted Chat Session
   const getClientSecret = useCallback(
     async (currentSecret: string | null) => {
       if (!workflow) {
@@ -135,7 +143,7 @@ export function ChatKitPanel({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            workflow: { id: workflow },     // 👈 Dynamic workflow
+            workflow: { id: workflow },
             chatkit_configuration: {
               file_upload: { enabled: true },
             },
@@ -174,7 +182,7 @@ export function ChatKitPanel({
     [workflow, setErrorState]
   );
 
-  // 👉 Initialize ChatKit UI
+  // 👉 ChatKit UI Initialization
   const chatkit = useChatKit({
     api: { getClientSecret },
     theme: { colorScheme: theme },
@@ -182,7 +190,10 @@ export function ChatKitPanel({
       greeting: "Jak mogę pomóc?",
       prompts: [{ label: "Co możesz zrobić?", prompt: "Co możesz zrobić?" }],
     },
-    composer: { placeholder: "Zadaj pytanie...", attachments: { enabled: true } },
+    composer: {
+      placeholder: "Zadaj pytanie...",
+      attachments: { enabled: true },
+    },
     onClientTool: async () => ({ success: true }),
     onResponseEnd,
     onThreadChange: () => processedFacts.current.clear(),
