@@ -2,8 +2,8 @@
 
 import ChatKitPanel from "@/components/ChatKitPanel";
 
-export default function ChatTopicPage({ params }: { params: { topic: string } }) {
-  const { topic } = params;
+export default function ChatTopicPage(props: any) {
+  const topic = props.params?.topic;
 
   const WORKFLOWS: Record<string, { id: string }> = {
     dofinansowania: { id: process.env.NEXT_PUBLIC_CHATKIT_WORKFLOW_DOF! },
