@@ -21,7 +21,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // 👉 Temporary demo user — later we will replace with Basecamp login
+    // 👉 Temporary user string - later dynamic (e.g. Basecamp ID)
     const userId = "guest-user";
 
     const resp = await fetch("https://api.openai.com/v1/chatkit/sessions", {
@@ -32,7 +32,7 @@ export async function POST(req: Request) {
         "OpenAI-Beta": "chatkit_beta=v1"
       },
       body: JSON.stringify({
-        user: { id: userId },            // ⭐ REQUIRED
+        user: userId,            // ⭐ MUST be string
         workflow: { id: workflow.id }
       }),
     });
