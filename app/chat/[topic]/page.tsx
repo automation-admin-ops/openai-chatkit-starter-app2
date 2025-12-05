@@ -1,5 +1,5 @@
 import ChatPage from "@/components/ChatPage";
 
-export default function Chat({ params }: { params: { topic: string } }) {
+export default function Page({ params }: { params: { topic: string } }) {
   return <ChatPage topic={params.topic} />;
 }
