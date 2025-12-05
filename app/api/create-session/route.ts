@@ -1,12 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-type WorkflowData = {
-  id: string;
-};
-
-type CreateSessionBody = {
-  workflow?: WorkflowData;
-};
+type WorkflowData = { id: string };
+type CreateSessionBody = { workflow?: WorkflowData };
 
 export async function POST(req: NextRequest) {
   try {
@@ -28,29 +23,22 @@ export async function POST(req: NextRequest) {
       headers: {
         "Content-Type": "application/json",
 
-        // API KEY
+        // Klucz
         Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
 
-        // Włączamy Hosted ChatKit
+        // Hosted ChatKit wymagane nagłówki
         "OpenAI-Beta": "chatkit_beta=v1",
         "OpenAI-ChatKit-Hosted": "session",
 
-        // 🔒 Identyfikacja historii
+        // To identyfikuje sesję (historię)
         "X-OpenAI-ChatKit-User": userId,
         "X-OpenAI-ChatKit-Workflow": workflow.id,
       },
       body: JSON.stringify({
-        model: "gpt-4.1-mini",             // model nie ma znaczenia — tylko uruchamia sesję
-
-        // Minimalna inicjalizacja
+        model: "gpt-4.1-mini",
         messages: [
           { role: "system", content: "Initialize ChatKit session." }
-        ],
-
-        // Dodatkowo można włączyć upload plików
-        file_upload: {
-          enabled: true,
-        }
+        ]
       }),
     });
 
