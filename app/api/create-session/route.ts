@@ -1,65 +1,43 @@
 import { NextRequest, NextResponse } from "next/server";
-
-type WorkflowData = { id: string };
-type CreateSessionBody = { workflow?: WorkflowData };
+import OpenAI from "openai";
 
 export async function POST(req: NextRequest) {
   try {
-    const body: CreateSessionBody = await req.json();
-    const workflow = body?.workflow;
+    const body = await req.json();
 
-    if (!workflow?.id) {
+    if (!body?.workflow?.id) {
       return NextResponse.json(
-        { error: "Missing workflow.id in request body." },
+        { error: "Missing required parameter: 'workflow.id'" },
         { status: 400 }
       );
     }
 
-    // 🟢 Publiczny user per kategoria (historia wspólna)
-    const userId = `public-${workflow.id}`;
-
-    // 🟤 Tworzymy sesję ChatKit przez dedykowany endpoint
-    const response = await fetch("https://api.openai.com/v1/chatkit/sessions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-
-        // klucz API
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-
-        // wymagany header
+    const client = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY!,
+      defaultHeaders: {
         "OpenAI-Beta": "chatkit_beta=v1",
       },
-      body: JSON.stringify({
-        session: {
-          user: userId,
-          workflow_id: workflow.id,
-        }
-      }),
     });
 
-    const result = await response.json();
+    const response = await client.chat.completions.create({
+      model: "gpt-4.1-mini",
+      messages: [
+        { role: "system", content: "Create ChatKit hosted session." },
+        { role: "user", content: "initialize" },
+      ],
+      extra_body: {
+        session: {
+          user: "public_user", // 🟢 wszyscy użytkownicy mają jedną historię
+          workflow_id: body.workflow.id,
+        },
+      },
+    });
 
-    if (!response.ok) {
-      console.error("ChatKit session error:", result);
-      return NextResponse.json(
-        { error: result?.error?.message ?? "Failed to create session" },
-        { status: 500 }
-      );
-    }
-
-    if (!result?.client_secret) {
-      console.error("Session created without client_secret:", result);
-      return NextResponse.json(
-        { error: "Missing client secret in response from OpenAI." },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({ client_secret: result.client_secret });
-
-  } catch (error) {
-    console.error("ChatKit session error:", error);
-    return NextResponse.json({ error: "Unexpected backend error" }, { status: 500 });
+    return NextResponse.json({
+      client_secret: response.client_secret,
+    });
+  } catch (err: any) {
+    console.error("ChatKit session error:", err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
