@@ -2,11 +2,7 @@
 
 import ChatKitPanel from "@/components/ChatKitPanel";
 
-type Props = {
-  params: { topic: string };
-};
-
-export default function ChatTopicPage({ params }: Props) {
+export default function ChatTopicPage({ params }: { params: { topic: string } }) {
   const { topic } = params;
 
   const WORKFLOWS: Record<string, { id: string }> = {
@@ -19,7 +15,7 @@ export default function ChatTopicPage({ params }: Props) {
   if (!workflow) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-slate-950 text-white">
-        <h1 className="text-2xl font-bold">❌ Brak takiego chatu</h1>
+        <h1 className="text-2xl font-bold">❌ Nie znaleziono asystenta</h1>
       </main>
     );
   }
