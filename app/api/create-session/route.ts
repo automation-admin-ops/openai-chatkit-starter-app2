@@ -1,57 +1,52 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from "next/server";
+import OpenAI from "openai";
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    if (!body.workflow?.id) {
+    if (!body?.workflow?.id) {
       return NextResponse.json(
-        { error: "Missing required parameter: workflow.id" },
+        { error: "Missing workflow id" },
         { status: 400 }
       );
     }
 
-    // 🔐 wymagany user (globalny / publiczny)
-    const userId = "public_user";
-
-    // 🔥 Tworzymy sesję ChatKit
-    const response = await fetch("https://api.openai.com/v1/chatkit/sessions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
-        "Content-Type": "application/json",
-        "OpenAI-Beta": "chatkit_beta=v1", // ⚠️ ważne
-      },
-      body: JSON.stringify({
-        user: userId,
-        workflow_id: body.workflow.id,
-      }),
+    const client = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY!,
     });
 
-    if (!response.ok) {
-      const err = await response.json();
-      console.error("ChatKit session error:", err);
-      return NextResponse.json(err, { status: 500 });
-    }
-
-    const result = await response.json();
+    const result = await client.chat.completions.create({
+      model: "gpt-4.1-mini",
+      messages: [
+        { role: "system", content: "ChatKit hosted session init" },
+        { role: "user", content: "initialize" },
+      ],
+    }, {
+      headers: {
+        "OpenAI-Beta": "chatkit_beta=v1",
+      },
+      session: {
+        user: "public_user",         // 👤 shared
+        workflow_id: body.workflow.id, // 🔁 workflow
+      },
+    });
 
     if (!result.client_secret) {
       return NextResponse.json(
-        { error: "Missing client secret in response from OpenAI." },
+        { error: "Missing client secret in response" },
         { status: 500 }
       );
     }
 
-    return NextResponse.json({
-      client_secret: result.client_secret,
-      user: userId,
-    });
-  } catch (error: any) {
-    console.error("Unexpected server error:", error);
+    return NextResponse.json({ clientSecret: result.client_secret });
+  } catch (err) {
+    console.error("ChatKit session error:", err);
     return NextResponse.json(
-      { error: "Internal server error" },
+      {
+        error: "Failed to create session",
+        details: err,
+      },
       { status: 500 }
     );
   }

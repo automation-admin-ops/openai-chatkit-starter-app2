@@ -1,31 +1,24 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import ChatKitPanel from "@/components/ChatKitPanel";
 
-export default function ChatTopicPage(props: any) {
-  const topic = props.params?.topic;
+interface PageProps {
+  params: { topic: string };
+}
 
-  const WORKFLOWS: Record<string, { id: string }> = {
-    dofinansowania: { id: process.env.NEXT_PUBLIC_CHATKIT_WORKFLOW_DOF! },
-    ogolny: { id: process.env.NEXT_PUBLIC_CHATKIT_WORKFLOW_OGOL! },
-  };
+const WORKFLOWS: Record<string, string> = {
+  dofinansowania: "wf_6932ac799e9881909bdcda1aad5227a40f71ef9303cd9786",
+  ogolny: "wf_68e61c674c7c81908108f731ff8052260f55d9779aac7dae",
+};
 
-  const workflow = WORKFLOWS[topic];
+export default function Page({ params }: PageProps) {
+  const topic = params.topic;
 
-  if (!workflow) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-950 text-white">
-        <h1 className="text-2xl font-bold">❌ Nie znaleziono asystenta</h1>
-      </main>
-    );
-  }
+  const workflowId = WORKFLOWS[topic] ?? WORKFLOWS.ogolny;
 
   return (
-    <main className="flex min-h-screen flex-col items-center bg-slate-100 dark:bg-slate-950">
-      <div className="w-full max-w-5xl mt-8">
-        <ChatKitPanel workflow={workflow} />
-      </div>
+    <main className="w-full h-screen bg-slate-950 text-white">
+      <ChatKitPanel workflow={{ id: workflowId }} topic={topic} />
     </main>
   );
 }

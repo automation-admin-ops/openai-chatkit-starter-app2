@@ -1,97 +1,51 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
-import { ChatKitWidget, ColorScheme } from "@openai/chatkit-react";
+import { useEffect, useRef } from "react";
+import { ChatKit, ColorScheme } from "@openai/chatkit-react";
 
 interface ChatKitPanelProps {
   workflow: { id: string };
+  topic: string;
 }
 
-export default function ChatKitPanel({ workflow }: ChatKitPanelProps) {
-  const widgetRef = useRef<ChatKitWidget | null>(null);
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const [theme, setTheme] = useState<ColorScheme>("light");
+export default function ChatKitPanel({ workflow, topic }: ChatKitPanelProps) {
+  // unikalny klucz dla kategorii historii
+  const widgetKey = `chatkit_${topic}`;
 
-  const createSession = useCallback(async () => {
-    const res = await fetch("/api/create-session", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ workflow }),
-    });
+  const widgetRef = useRef<HTMLDivElement | null>(null);
 
-    if (!res.ok) {
-      console.error("Failed to create session:", await res.text());
-      throw new Error("Failed to create session");
+  useEffect(() => {
+    // reset widżetu przy zmianie kategorii
+    if (widgetRef.current) {
+      widgetRef.current.innerHTML = "";
     }
-
-    return res.json();
-  }, [workflow]);
-
-  // 👉 load ChatKit script only on client
-  useEffect(() => {
-    const script = document.createElement("script");
-    script.src = "https://cdn.openai.com/chatkit/v1/chatkit.js";
-    script.async = true;
-    document.body.appendChild(script);
-
-    return () => {
-      document.body.removeChild(script);
-    };
-  }, []);
-
-  useEffect(() => {
-    let destroyed = false;
-
-    (async () => {
-      try {
-        const { client_secret } = await createSession();
-
-        // 👉 wait until window.createChatKit is available
-        const waitForLib = () =>
-          new Promise<void>((resolve) => {
-            const check = () => {
-              // @ts-expect-error - createChatKit injected globally by script
-              if (window.createChatKit) resolve();
-              else setTimeout(check, 50);
-            };
-            check();
-          });
-
-        await waitForLib();
-
-        // @ts-expect-error - ChatKit global usage
-        const instance: ChatKitWidget = await window.createChatKit({
-          theme,
-          api: {
-            getClientSecret: async () => client_secret,
-          },
-        });
-
-        if (!destroyed) widgetRef.current = instance;
-        if (containerRef.current) instance.mount(containerRef.current);
-      } catch (err) {
-        console.error("ChatKit error:", err);
-      }
-    })();
-
-    return () => {
-      destroyed = true;
-      widgetRef.current?.destroy();
-    };
-  }, [createSession, theme]);
+  }, [topic]);
 
   return (
-    <>
-      <div ref={containerRef} className="h-[85vh] w-full" />
-
-      <div className="p-2 flex justify-end">
-        <button
-          className="px-4 py-2 bg-gray-800 text-white text-sm rounded"
-          onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-        >
-          Zmień motyw ({theme === "light" ? "🌙" : "☀️"})
-        </button>
-      </div>
-    </>
+    <div ref={widgetRef} className="w-full h-[90vh]">
+      <ChatKit
+        apiKey="client" 
+        options={{
+          api: {
+            getClientSecret: async () => {
+              const res = await fetch("/api/create-session", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ workflow, topic }),
+              });
+              if (!res.ok) throw new Error("Failed to create session");
+              const data = await res.json();
+              return data.clientSecret;
+            },
+          },
+          widget: {
+            theme: {
+              colorScheme: ColorScheme.Dark,
+            },
+            historySyncKey: widgetKey, // 🧠 histora tylko dla kategorii
+          },
+        }}
+      />
+    </div>
   );
 }
