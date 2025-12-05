@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import OpenAI from "openai";
 
 export async function POST(req: Request) {
   try {
@@ -12,42 +11,29 @@ export async function POST(req: Request) {
       );
     }
 
-    const client = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY!,
-    });
-
-    const result = await client.chat.completions.create({
-      model: "gpt-4.1-mini",
-      messages: [
-        { role: "system", content: "ChatKit hosted session init" },
-        { role: "user", content: "initialize" },
-      ],
-    }, {
+    const res = await fetch("https://api.openai.com/v1/chatkit/sessions", {
+      method: "POST",
       headers: {
-        "OpenAI-Beta": "chatkit_beta=v1",
+        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
+        "OpenAI-Beta": "chatkit_beta=v1" // REQUIRED
       },
-      session: {
-        user: "public_user",         // 👤 shared
-        workflow_id: body.workflow.id, // 🔁 workflow
-      },
+      body: JSON.stringify({
+        user: "public_user",            // każdy widzi historię
+        workflow_id: body.workflow.id,  // Twój workflow
+      }),
     });
 
-    if (!result.client_secret) {
-      return NextResponse.json(
-        { error: "Missing client secret in response" },
-        { status: 500 }
-      );
+    const data = await res.json();
+
+    if (!res.ok || !data?.client_secret) {
+      console.error("ChatKit session error:", data);
+      return NextResponse.json({ error: "Failed to create session" }, { status: 500 });
     }
 
-    return NextResponse.json({ clientSecret: result.client_secret });
-  } catch (err) {
-    console.error("ChatKit session error:", err);
-    return NextResponse.json(
-      {
-        error: "Failed to create session",
-        details: err,
-      },
-      { status: 500 }
-    );
+    return NextResponse.json({ client_secret: data.client_secret });
+  } catch (e) {
+    console.error(e);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
