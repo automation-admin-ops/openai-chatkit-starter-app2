@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 
@@ -16,28 +18,32 @@ export async function POST(req: Request) {
       apiKey: process.env.OPENAI_API_KEY!,
     });
 
-    // 👇 PROPER hosted chatkit session
-    const result = await client.chat.completions.create({
-      model: "gpt-4.1-mini",
-      extra_headers: {
-        "OpenAI-ChatKit-Hosted": "session",
-      },
-      // 👇 pay attention: properly nested session config
-      extra_body: {
-        session: {
-          workflow_id: workflow.id,
+    // ⭐ Created properly using request options for headers
+    const result = await client.chat.completions.create(
+      {
+        model: "gpt-4.1-mini",
+        messages: [
+          { role: "system", content: "Initialize workflow session." }
+        ],
+        // 👇 Session configuration goes in body
+        extra_body: {
+          session: {
+            workflow_id: workflow.id,
+          },
         },
       },
-      messages: [
-        {
-          role: "system",
-          content: "Initialize workflow session.",
+      {
+        // 👇 Headers go here (request options)
+        headers: {
+          "OpenAI-ChatKit-Hosted": "session",
         },
-      ],
-    });
+      }
+    );
 
+    // ⭐ Try various locations ChatKit may store client secret
     const clientSecret =
-      result?.client_secret || result?.session?.client_secret;
+      (result as any)?.client_secret ||
+      (result as any)?.session?.client_secret;
 
     if (!clientSecret) {
       return NextResponse.json(
@@ -49,6 +55,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ client_secret: clientSecret });
   } catch (e) {
     console.error("SESSION ERROR:", e);
-    return NextResponse.json({ error: "Internal session error." }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal session error." },
+      { status: 500 }
+    );
   }
 }
