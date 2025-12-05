@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { createChatKit, ColorScheme, FactAction, ChatKitWidget } from "@openai/chatkit-react";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { ChatKitWidget, ColorScheme } from "@openai/chatkit-react";
 
 interface ChatKitPanelProps {
   workflow: { id: string };
@@ -12,14 +12,11 @@ export default function ChatKitPanel({ workflow }: ChatKitPanelProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [theme, setTheme] = useState<ColorScheme>("light");
 
-  // Create session on server
-  async function createSession() {
+  const createSession = useCallback(async () => {
     const res = await fetch("/api/create-session", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        workflow,
-      }),
+      body: JSON.stringify({ workflow }),
     });
 
     if (!res.ok) {
@@ -28,19 +25,22 @@ export default function ChatKitPanel({ workflow }: ChatKitPanelProps) {
     }
 
     return res.json();
-  }
+  }, [workflow]);
 
   useEffect(() => {
     let destroyed = false;
 
     (async () => {
       try {
-        const data = await createSession();
+        const { client_secret } = await createSession();
+
+        // ⛔ NIE importujemy createChatKit — ładujemy z hosta OpenAI
+        const { createChatKit } = await import("https://cdn.openai.com/chatkit/v1/chatkit.js");
 
         const instance = await createChatKit({
           theme,
           api: {
-            getClientSecret: async () => data.client_secret,
+            getClientSecret: async () => client_secret,
           },
         });
 
@@ -60,7 +60,7 @@ export default function ChatKitPanel({ workflow }: ChatKitPanelProps) {
       destroyed = true;
       widgetRef.current?.destroy();
     };
-  }, [workflow, theme]);
+  }, [createSession, theme]);
 
   return (
     <>

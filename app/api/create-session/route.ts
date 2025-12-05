@@ -3,7 +3,7 @@ import OpenAI from "openai";
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    const body: { workflow?: { id: string } } = await req.json();
 
     if (!body?.workflow?.id) {
       return NextResponse.json(
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
       ],
       extra_body: {
         session: {
-          user: "public_user", // 🟢 wszyscy użytkownicy mają jedną historię
+          user: "public_user",
           workflow_id: body.workflow.id,
         },
       },
@@ -36,8 +36,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       client_secret: response.client_secret,
     });
-  } catch (err: any) {
+  } catch (err) {
     console.error("ChatKit session error:", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
