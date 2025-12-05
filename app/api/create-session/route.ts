@@ -1,58 +1,65 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+import { NextRequest, NextResponse } from "next/server";
+import OpenAI from "openai";
 
-import { NextResponse } from "next/server";
-
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const { workflow } = await req.json();
+    const body = await req.json();
 
+    const workflow = body?.workflow;
     if (!workflow?.id) {
       return NextResponse.json(
-        { error: "Missing workflow id." },
+        { error: "Missing workflow.id in request body." },
         { status: 400 }
       );
     }
 
-    const OPENAI_KEY = process.env.OPENAI_API_KEY;
-    if (!OPENAI_KEY) {
-      return NextResponse.json(
-        { error: "Missing API key." },
-        { status: 500 }
-      );
-    }
-
-    // 👉 Temporary user string - later dynamic (e.g. Basecamp ID)
-    const userId = "guest-user";
-
-    const resp = await fetch("https://api.openai.com/v1/chatkit/sessions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${OPENAI_KEY}`,
-        "OpenAI-Beta": "chatkit_beta=v1"
+    const client = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+      defaultHeaders: {
+        // 🔑 wymagane do Hosted Mode
+        "OpenAI-Beta": "chatkit_beta=v1",
       },
-      body: JSON.stringify({
-        user: userId,            // ⭐ MUST be string
-        workflow: { id: workflow.id }
-      }),
     });
 
-    const text = await resp.text();
+    // 🟢 PUBLICZNA historia per workflow
+    const userId = `public-${workflow.id}`;
 
-    if (!resp.ok) {
-      console.error("ChatKit session error:", resp.status, text);
+    const result = await client.chat.completions.create({
+      model: "gpt-4.1-mini",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are an assistant accessible from a public anonymous session.",
+        },
+        { role: "user", content: "initialize" },
+      ],
+      // 🧩 Konfiguracja Hosted Session
+      session: {
+        // 👇 najważniejsze — unikalny user per workflow
+        user: userId,
+        workflow_id: workflow.id,
+      },
+    });
+
+    const clientSecret = (result as any)?.client_secret;
+    if (!clientSecret || typeof clientSecret !== "string") {
       return NextResponse.json(
-        { error: "Failed to create session" },
+        { error: "Missing client secret in ChatKit response." },
         { status: 500 }
       );
     }
 
-    const data = JSON.parse(text);
-    return NextResponse.json({ client_secret: data.client_secret });
-  } catch (e) {
-    console.error("SESSION ERROR:", e);
+    return NextResponse.json({ client_secret: clientSecret });
+  } catch (error: any) {
+    console.error("ChatKit session error:", error);
+
     return NextResponse.json(
-      { error: "Internal session error." },
+      {
+        error:
+          error?.message ||
+          "Unknown error while creating ChatKit session. Check server logs.",
+      },
       { status: 500 }
     );
   }
