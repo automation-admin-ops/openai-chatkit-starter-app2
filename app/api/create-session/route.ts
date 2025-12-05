@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
 
 type WorkflowData = {
   id: string;
@@ -7,10 +6,6 @@ type WorkflowData = {
 
 type CreateSessionBody = {
   workflow?: WorkflowData;
-};
-
-type ChatKitResponse = {
-  client_secret?: string;
 };
 
 export async function POST(req: NextRequest) {
@@ -25,47 +20,60 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 🟢 PUBLICZNY identyfikator historii per workflow
-    const userId: string = `public-${workflow.id}`;
+    // 🟢 Publiczny user per kategoria historii
+    const userId = `public-${workflow.id}`;
 
-    const client = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-      defaultHeaders: {
+    // 🔥 Hosted ChatKit — tylko REST działa w 100%
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+
+        // 📌 Wymagane
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+
+        // 📌 Włączamy Hosted ChatKit
         "OpenAI-Beta": "chatkit_beta=v1",
         "OpenAI-ChatKit-Hosted": "session",
+
+        // 📌 Identyfikacja historii
         "X-OpenAI-ChatKit-User": userId,
         "X-OpenAI-ChatKit-Workflow": workflow.id,
       },
-    });
-
-    const result = (await client.chat.completions.create(
-      {
+      body: JSON.stringify({
         model: "gpt-4.1-mini",
         messages: [
           { role: "system", content: "Initialize chat session." },
-          { role: "user", content: "init" },
+          { role: "user", content: "init" }
         ],
-      },
-      {
-        // 🧠 👇 Tutaj umieszczamy session → TRIGGER HOSTED
+        // 🔐 Najważniejsze → to tworzy sesję
         extra_body: {
           session: {
             user: userId,
             workflow_id: workflow.id,
           },
         },
-      }
-    )) as unknown as ChatKitResponse;
+      }),
+    });
 
-    const clientSecret = result.client_secret;
-    if (!clientSecret || typeof clientSecret !== "string") {
+    const result = await response.json();
+
+    if (!response.ok) {
+      console.error("ChatKit session error:", result);
       return NextResponse.json(
-        { error: "Missing client secret in response." },
+        { error: result?.error?.message ?? "Failed to create session" },
         { status: 500 }
       );
     }
 
-    return NextResponse.json({ client_secret: clientSecret });
+    if (!result?.client_secret) {
+      return NextResponse.json(
+        { error: "Missing client secret in response from OpenAI." },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ client_secret: result.client_secret });
   } catch (error) {
     console.error("ChatKit session error:", error);
     const message = error instanceof Error ? error.message : "Unknown error";
