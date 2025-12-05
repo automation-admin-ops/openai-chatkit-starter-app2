@@ -1,11 +1,7 @@
 "use client";
 import ChatKitPanel from "@/components/ChatKitPanel";
 
-interface ChatPageProps {
-  params: { topic: string };
-}
-
-export default function ChatPage({ params }: ChatPageProps) {
+export default function ChatPage({ params }: { params: { topic: string } }) {
   const workflows: Record<string, string> = {
     dofinansowania: "wf_6932ac799e9881909bdcda1aad5227a40f71ef9303cd9786",
     ogolny: "wf_68e61c674c7c81908108f731ff8052260f55d9779aac7dae",
@@ -16,7 +12,7 @@ export default function ChatPage({ params }: ChatPageProps) {
   if (!workflowId) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-red-100 text-red-800">
-        <div>❌ Nie znaleziono takiego asystenta.</div>
+        ❌ Nie znaleziono takiego asystenta.
       </main>
     );
   }
