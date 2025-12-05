@@ -15,30 +15,26 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 🟢 Publiczny user per kategoria (wspólna historia)
+    // 🟢 Publiczny user per kategoria (historia wspólna)
     const userId = `public-${workflow.id}`;
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    // 🟤 Tworzymy sesję ChatKit przez dedykowany endpoint
+    const response = await fetch("https://api.openai.com/v1/chatkit/sessions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
 
-        // Klucz
+        // klucz API
         Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
 
-        // Hosted ChatKit wymagane nagłówki
+        // wymagany header
         "OpenAI-Beta": "chatkit_beta=v1",
-        "OpenAI-ChatKit-Hosted": "session",
-
-        // To identyfikuje sesję (historię)
-        "X-OpenAI-ChatKit-User": userId,
-        "X-OpenAI-ChatKit-Workflow": workflow.id,
       },
       body: JSON.stringify({
-        model: "gpt-4.1-mini",
-        messages: [
-          { role: "system", content: "Initialize ChatKit session." }
-        ]
+        session: {
+          user: userId,
+          workflow_id: workflow.id,
+        }
       }),
     });
 
@@ -53,6 +49,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!result?.client_secret) {
+      console.error("Session created without client_secret:", result);
       return NextResponse.json(
         { error: "Missing client secret in response from OpenAI." },
         { status: 500 }
@@ -63,7 +60,6 @@ export async function POST(req: NextRequest) {
 
   } catch (error) {
     console.error("ChatKit session error:", error);
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: "Unexpected backend error" }, { status: 500 });
   }
 }
