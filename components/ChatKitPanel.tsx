@@ -1,48 +1,76 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-
-// ChatKit global loaded from CDN
-declare global {
-  interface Window {
-    ChatKit: any;
-  }
-}
+import { useEffect, useRef, useState } from "react";
+import Script from "next/script";
 
 interface ChatKitPanelProps {
   workflow: { id: string };
 }
 
-export default function ChatKitPanel({ workflow }: ChatKitPanelProps) {
-  const containerRef = useRef<HTMLDivElement>(null!);
-  useEffect(() => {
-    async function createSession() {
-      if (!containerRef.current) return;
+declare global {
+  interface Window {
+    ChatKit: {
+      createWidget: (options: {
+        element: HTMLElement;
+        clientSecret: string;
+        workflowId: string;
+      }) => void;
+    };
+  }
+}
 
+export default function ChatKitPanel({ workflow }: ChatKitPanelProps) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+
+  /** Fetch client secret from our Next.js API */
+  const createSession = async (workflowId: string): Promise<void> => {
+    try {
       const res = await fetch("/api/create-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ workflow }),
       });
 
-      const data = await res.json();
-
-      if (!data?.client_secret) {
-        console.error("Missing client secret in response from OpenAI.");
+      if (!res.ok) {
+        console.error("Failed to fetch session", await res.text());
         return;
       }
 
-      const chat = new window.ChatKit({
-        clientSecret: data.client_secret,
-        element: containerRef.current,
-        theme: "light",
-      });
-
-      chat.mount();
+      const data = await res.json();
+      setClientSecret(data.client_secret);
+    } catch (error) {
+      console.error("Session error:", error);
     }
+  };
 
-    createSession();
-  }, [workflow]);
+  /** Run session creation ONCE */
+  useEffect(() => {
+    if (workflow?.id) createSession(workflow.id);
+  }, [workflow.id]);
 
-  return <div ref={containerRef} style={{ height: "100vh", width: "100%" }} />;
+  /** After ChatKit script loads, create widget */
+  useEffect(() => {
+    if (!clientSecret) return;
+    if (!containerRef.current) return;
+    if (!window.ChatKit || !window.ChatKit.createWidget) return;
+
+    window.ChatKit.createWidget({
+      element: containerRef.current,
+      clientSecret,
+      workflowId: workflow.id,
+    });
+  }, [clientSecret, workflow.id]);
+
+  return (
+    <div className="w-full h-full flex flex-col">
+      {/* Load ChatKit JS */}
+      <Script
+        src="https://cdn.openai.com/chatkit/v1/chatkit.js"
+        strategy="lazyOnload"
+      />
+      {/* Chat container */}
+      <div ref={containerRef} className="flex-1 w-full" />
+    </div>
+  );
 }
