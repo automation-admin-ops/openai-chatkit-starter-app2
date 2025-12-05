@@ -21,14 +21,18 @@ export async function POST(req: Request) {
       );
     }
 
+    // 👉 Temporary demo user — later we will replace with Basecamp login
+    const userId = "guest-user";
+
     const resp = await fetch("https://api.openai.com/v1/chatkit/sessions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${OPENAI_KEY}`,
-        "OpenAI-Beta": "chatkit_beta=v1"   // ⭐ REQUIRED HEADER
+        "OpenAI-Beta": "chatkit_beta=v1"
       },
       body: JSON.stringify({
+        user: { id: userId },            // ⭐ REQUIRED
         workflow: { id: workflow.id }
       }),
     });
