@@ -13,7 +13,6 @@
   "next": "^15.5.4",
   "react": "^19.2.0",
   "react-dom": "^19.2.0",
-  "framer-motion": "^10.18.0",
   "openai": "^4.28.4"
 },
   "optionalDependencies": {
