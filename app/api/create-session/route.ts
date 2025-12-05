@@ -38,23 +38,24 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    const result = (await client.chat.completions.create({
-      model: "gpt-4.1-mini",
-
-      // 👇 Musi być body startujące sesję
-      messages: [
-        { role: "system", content: "Initialize chat session." },
-        { role: "user", content: "init" },
-      ],
-
-      // 👇 Konfiguracja sesji musi iść w extra_body
-      extra_body: {
-        session: {
-          user: userId,
-          workflow_id: workflow.id,
-        },
+    const result = (await client.chat.completions.create(
+      {
+        model: "gpt-4.1-mini",
+        messages: [
+          { role: "system", content: "Initialize chat session." },
+          { role: "user", content: "init" },
+        ],
       },
-    })) as unknown as ChatKitResponse;
+      {
+        // 🧠 👇 Tutaj umieszczamy session → TRIGGER HOSTED
+        extra_body: {
+          session: {
+            user: userId,
+            workflow_id: workflow.id,
+          },
+        },
+      }
+    )) as unknown as ChatKitResponse;
 
     const clientSecret = result.client_secret;
     if (!clientSecret || typeof clientSecret !== "string") {
