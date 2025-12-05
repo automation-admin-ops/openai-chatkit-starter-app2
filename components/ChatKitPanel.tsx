@@ -1,76 +1,75 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import Script from "next/script";
+import { useCallback, useEffect, useRef, useState } from "react";
 
-interface ChatKitPanelProps {
-  workflow: { id: string };
-}
-
-declare global {
-  interface Window {
-    ChatKit: {
-      createWidget: (options: {
-        element: HTMLElement;
-        clientSecret: string;
-        workflowId: string;
-      }) => void;
-    };
-  }
-}
-
-export default function ChatKitPanel({ workflow }: ChatKitPanelProps) {
+export default function ChatKitPanel({ workflow }: { workflow: { id: string } }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
 
-  /** Fetch client secret from our Next.js API */
-  const createSession = async (workflowId: string): Promise<void> => {
-    try {
-      const res = await fetch("/api/create-session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ workflow }),
-      });
-
-      if (!res.ok) {
-        console.error("Failed to fetch session", await res.text());
-        return;
-      }
-
-      const data = await res.json();
-      setClientSecret(data.client_secret);
-    } catch (error) {
-      console.error("Session error:", error);
-    }
-  };
-
-  /** Run session creation ONCE */
-  useEffect(() => {
-    if (workflow?.id) createSession(workflow.id);
-  }, [workflow.id]);
-
-  /** After ChatKit script loads, create widget */
-  useEffect(() => {
-    if (!clientSecret) return;
-    if (!containerRef.current) return;
-    if (!window.ChatKit || !window.ChatKit.createWidget) return;
-
-    window.ChatKit.createWidget({
-      element: containerRef.current,
-      clientSecret,
-      workflowId: workflow.id,
+  /** CREATE SESSION */
+  const createSession = useCallback(async () => {
+    const res = await fetch("/api/create-session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ workflow }),
     });
-  }, [clientSecret, workflow.id]);
+
+    if (!res.ok) {
+      console.error("❌ Failed to create session");
+      return;
+    }
+
+    const data = await res.json();
+    setSessionId(data.session_id);
+  }, [workflow]);
+
+  /** INIT WIDGET WHEN SESSION GENERATED */
+  useEffect(() => {
+    if (!sessionId || !containerRef.current) return;
+
+    // Load JS SDK
+    const script = document.createElement("script");
+    script.src = "https://cdn.openai.com/chatkit/v1/chatkit.js";
+    script.async = true;
+
+    script.onload = () => {
+      // @ts-expect-error because ChatKit is a global
+      if (window.ChatKit) {
+        // @ts-expect-error global
+        window.ChatKit.mount({
+          element: containerRef.current,
+          sessionId,
+          theme: {
+            darkMode: false,
+          },
+        });
+      }
+    };
+
+    document.body.appendChild(script);
+
+    return () => {
+      script.remove();
+    };
+  }, [sessionId]);
+
+  /** INIT ON FIRST RENDER */
+  useEffect(() => {
+    if (!sessionId) createSession();
+  }, [sessionId, createSession]);
 
   return (
-    <div className="w-full h-full flex flex-col">
-      {/* Load ChatKit JS */}
-      <Script
-        src="https://cdn.openai.com/chatkit/v1/chatkit.js"
-        strategy="lazyOnload"
-      />
-      {/* Chat container */}
-      <div ref={containerRef} className="flex-1 w-full" />
+    <div className="chat-panel" style={{ width: "100%", height: "100%" }}>
+      <div
+        ref={containerRef}
+        style={{
+          width: "100%",
+          height: "calc(100vh - 80px)",
+          border: "1px solid #ccc",
+          borderRadius: "8px",
+          overflow: "hidden",
+        }}
+      ></div>
     </div>
   );
 }

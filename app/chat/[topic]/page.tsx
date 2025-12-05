@@ -2,8 +2,12 @@
 
 import ChatKitPanel from "@/components/ChatKitPanel";
 
-export default function ChatPage({ params }: { params: { topic: string } }) {
-  const topic = params.topic;
+export default async function ChatPage({
+  params,
+}: {
+  params: Promise<{ topic: string }>;
+}) {
+  const { topic } = await params;
   const workflow = { id: topic };
 
   return (
