@@ -20,44 +20,33 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 🟢 Publiczny user per kategoria historii
     const userId = `public-${workflow.id}`;
 
-    // 🔥 Hosted ChatKit — tylko REST działa w 100%
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    // 🔥 Hosted ChatKit (bez extra_body!)
+    const response = await fetch("https://api.openai.com/v1/chatkit/create_session", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
 
-        // 📌 Wymagane
+        // API key
         Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
 
-        // 📌 Włączamy Hosted ChatKit
+        // Wymagane nagłówki ChatKit
         "OpenAI-Beta": "chatkit_beta=v1",
         "OpenAI-ChatKit-Hosted": "session",
 
-        // 📌 Identyfikacja historii
+        // Identyfikacja sesji
         "X-OpenAI-ChatKit-User": userId,
         "X-OpenAI-ChatKit-Workflow": workflow.id,
       },
       body: JSON.stringify({
-        model: "gpt-4.1-mini",
-        messages: [
-          { role: "system", content: "Initialize chat session." },
-          { role: "user", content: "init" }
-        ],
-        // 🔐 Najważniejsze → to tworzy sesję
-        extra_body: {
-          session: {
-            user: userId,
-            workflow_id: workflow.id,
-          },
-        },
+        file_upload: { enabled: true },      // opcjonalne
       }),
     });
 
     const result = await response.json();
 
+    // Fail
     if (!response.ok) {
       console.error("ChatKit session error:", result);
       return NextResponse.json(
@@ -73,7 +62,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Success
     return NextResponse.json({ client_secret: result.client_secret });
+
   } catch (error) {
     console.error("ChatKit session error:", error);
     const message = error instanceof Error ? error.message : "Unknown error";
