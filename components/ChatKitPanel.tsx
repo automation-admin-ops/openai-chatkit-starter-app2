@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { ChatKit, ColorScheme } from "@openai/chatkit-react";
+import { ChatKit } from "@openai/chatkit-react";
 
 interface ChatKitPanelProps {
   workflow: { id: string };
@@ -9,13 +9,13 @@ interface ChatKitPanelProps {
 }
 
 export default function ChatKitPanel({ workflow, topic }: ChatKitPanelProps) {
-  // unikalny klucz dla kategorii historii
+  // Klucz historii tylko dla tego typu chatu
   const widgetKey = `chatkit_${topic}`;
 
   const widgetRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    // reset widżetu przy zmianie kategorii
+    // reset widżetu po zmianie kategorii
     if (widgetRef.current) {
       widgetRef.current.innerHTML = "";
     }
@@ -24,7 +24,7 @@ export default function ChatKitPanel({ workflow, topic }: ChatKitPanelProps) {
   return (
     <div ref={widgetRef} className="w-full h-[90vh]">
       <ChatKit
-        apiKey="client" 
+        apiKey="client"
         options={{
           api: {
             getClientSecret: async () => {
@@ -39,10 +39,8 @@ export default function ChatKitPanel({ workflow, topic }: ChatKitPanelProps) {
             },
           },
           widget: {
-            theme: {
-              colorScheme: ColorScheme.Dark,
-            },
-            historySyncKey: widgetKey, // 🧠 histora tylko dla kategorii
+            historySyncKey: widgetKey, // 🧠 oddzielna historia
+            // DARK THEME nadal aktywny poprzez CSS (global styling)
           },
         }}
       />
