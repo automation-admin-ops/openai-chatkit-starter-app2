@@ -27,6 +27,18 @@ export default function ChatKitPanel({ workflow }: ChatKitPanelProps) {
     return res.json();
   }, [workflow]);
 
+  // 👉 load ChatKit script only on client
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.src = "https://cdn.openai.com/chatkit/v1/chatkit.js";
+    script.async = true;
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
+
   useEffect(() => {
     let destroyed = false;
 
@@ -34,23 +46,29 @@ export default function ChatKitPanel({ workflow }: ChatKitPanelProps) {
       try {
         const { client_secret } = await createSession();
 
-        // ⛔ NIE importujemy createChatKit — ładujemy z hosta OpenAI
-        const { createChatKit } = await import("https://cdn.openai.com/chatkit/v1/chatkit.js");
+        // 👉 wait until window.createChatKit is available
+        const waitForLib = () =>
+          new Promise<void>((resolve) => {
+            const check = () => {
+              // @ts-ignore
+              if (window.createChatKit) resolve();
+              else setTimeout(check, 50);
+            };
+            check();
+          });
 
-        const instance = await createChatKit({
+        await waitForLib();
+
+        // @ts-ignore
+        const instance: ChatKitWidget = await window.createChatKit({
           theme,
           api: {
             getClientSecret: async () => client_secret,
           },
         });
 
-        if (!destroyed) {
-          widgetRef.current = instance;
-        }
-
-        if (containerRef.current) {
-          instance.mount(containerRef.current);
-        }
+        if (!destroyed) widgetRef.current = instance;
+        if (containerRef.current) instance.mount(containerRef.current);
       } catch (err) {
         console.error("ChatKit error:", err);
       }
