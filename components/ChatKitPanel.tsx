@@ -19,8 +19,8 @@ export type FactAction = {
 };
 
 type ChatKitPanelProps = {
+  workflow: string;
   theme: ColorScheme;
-  workflow: string; // 👈 DODANO
   onWidgetAction: (action: FactAction) => Promise<void>;
   onResponseEnd: () => void;
   onThemeRequest: (scheme: ColorScheme) => void;
@@ -44,8 +44,8 @@ const createInitialErrors = (): ErrorState => ({
 });
 
 export function ChatKitPanel({
+  workflow,
   theme,
-  workflow, // 👈 nowy parametr
   onWidgetAction,
   onResponseEnd,
   onThemeRequest,
@@ -107,7 +107,7 @@ export function ChatKitPanel({
           handleError(
             new CustomEvent("chatkit-script-error", {
               detail:
-                "ChatKit component unavailable. Check the script hosting.",
+                "ChatKit component unavailable. Check script hosting.",
             })
           );
         }
@@ -124,11 +124,165 @@ export function ChatKitPanel({
     };
   }, [scriptStatus, setErrorState]);
 
-  // NEW CHECK — workflow must come from props
   const isWorkflowConfigured = Boolean(workflow && !workflow.startsWith("wf_replace"));
 
   useEffect(() => {
     if (!isWorkflowConfigured && isMountedRef.current) {
       setErrorState({
-        session: "Workflow ID missing. Check your .env.",
+        session: "Workflow ID missing. Check your .env values.",
         retryable: false,
+      });
+      setIsInitializingSession(false);
+    }
+  }, [isWorkflowConfigured, setErrorState]);
+
+  const handleResetChat = useCallback(() => {
+    processedFacts.current.clear();
+    if (isBrowser) {
+      setScriptStatus(
+        window.customElements?.get("openai-chatkit") ? "ready" : "pending"
+      );
+    }
+    setIsInitializingSession(true);
+    setErrors(createInitialErrors());
+    setWidgetInstanceKey((prev) => prev + 1);
+  }, []);
+
+  const getClientSecret = useCallback(
+    async (currentSecret: string | null) => {
+      if (!isWorkflowConfigured) {
+        const detail = "Missing workflow ID.";
+        if (isMountedRef.current) {
+          setErrorState({ session: detail, retryable: false });
+          setIsInitializingSession(false);
+        }
+        throw new Error(detail);
+      }
+
+      try {
+        const response = await fetch(CREATE_SESSION_ENDPOINT, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            workflow: { id: workflow },
+            chatkit_configuration: {
+              file_upload: { enabled: true },
+            },
+          }),
+        });
+
+        const raw = await response.text();
+        let data: Record<string, unknown> = {};
+
+        if (raw) {
+          try {
+            data = JSON.parse(raw);
+          } catch {
+            console.error("Failed to parse create-session response");
+          }
+        }
+
+        if (!response.ok) {
+          const detail = extractErrorDetail(data, response.statusText);
+          throw new Error(detail);
+        }
+
+        const clientSecret = data?.client_secret as string | undefined;
+        if (!clientSecret) throw new Error("Missing client secret in response");
+        return clientSecret;
+      } finally {
+        if (isMountedRef.current && !currentSecret) {
+          setIsInitializingSession(false);
+        }
+      }
+    },
+    [isWorkflowConfigured, workflow, setErrorState]
+  );
+
+  const chatkit = useChatKit({
+    api: { getClientSecret },
+    theme: {
+      colorScheme: theme,
+      ...getThemeConfig(theme),
+    },
+    startScreen: { greeting: GREETING, prompts: STARTER_PROMPTS },
+    composer: { placeholder: PLACEHOLDER_INPUT, attachments: { enabled: true } },
+    threadItemActions: { feedback: false },
+
+    onClientTool: async (invocation) => {
+      if (invocation.name === "switch_theme") {
+        const requested = invocation.params.theme;
+        if (requested === "light" || requested === "dark") {
+          onThemeRequest(requested);
+          return { success: true };
+        }
+        return { success: false };
+      }
+
+      if (invocation.name === "record_fact") {
+        const id = String(invocation.params.fact_id ?? "");
+        const text = String(invocation.params.fact_text ?? "");
+        if (!id || processedFacts.current.has(id)) return { success: true };
+        processedFacts.current.add(id);
+        void onWidgetAction({
+          type: "save",
+          factId: id,
+          factText: text.replace(/\s+/g, " ").trim(),
+        });
+        return { success: true };
+      }
+
+      return { success: false };
+    },
+
+    onResponseEnd: () => onResponseEnd(),
+    onResponseStart: () => setErrorState({ integration: null, retryable: false }),
+    onThreadChange: () => processedFacts.current.clear(),
+    onError: ({ error }) => console.error("ChatKit error", error),
+  });
+
+  const activeError = errors.session ?? errors.integration;
+  const blockingError = errors.script ?? activeError;
+
+  return (
+    <div className="relative pb-8 flex h-[90vh] w-full rounded-2xl flex-col overflow-hidden bg-white shadow-sm transition-colors dark:bg-slate-900">
+      <ChatKit
+        key={widgetInstanceKey}
+        control={chatkit.control}
+        className={
+          blockingError || isInitializingSession
+            ? "pointer-events-none opacity-0"
+            : "block h-full w-full"
+        }
+      />
+      <ErrorOverlay
+        error={blockingError}
+        fallbackMessage={
+          blockingError || !isInitializingSession
+            ? null
+            : "Loading assistant session..."
+        }
+        onRetry={blockingError && errors.retryable ? handleResetChat : null}
+        retryLabel="Restart chat"
+      />
+    </div>
+  );
+}
+
+function extractErrorDetail(
+  payload: Record<string, unknown> | undefined,
+  fallback: string
+): string {
+  if (!payload) return fallback;
+  if (typeof payload.error === "string") return payload.error;
+  if (
+    payload.error &&
+    typeof payload.error === "object" &&
+    "message" in payload.error
+  ) {
+    const msg = (payload.error as { message?: string }).message;
+    if (typeof msg === "string") return msg;
+  }
+  if (typeof payload.message === "string") return payload.message;
+  return fallback;
+}
