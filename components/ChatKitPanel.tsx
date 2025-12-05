@@ -50,7 +50,7 @@ export default function ChatKitPanel({ workflow }: ChatKitPanelProps) {
         const waitForLib = () =>
           new Promise<void>((resolve) => {
             const check = () => {
-              // @ts-ignore
+              // @ts-expect-error - createChatKit injected globally by script
               if (window.createChatKit) resolve();
               else setTimeout(check, 50);
             };
@@ -59,7 +59,7 @@ export default function ChatKitPanel({ workflow }: ChatKitPanelProps) {
 
         await waitForLib();
 
-        // @ts-ignore
+        // @ts-expect-error - ChatKit global usage
         const instance: ChatKitWidget = await window.createChatKit({
           theme,
           api: {
