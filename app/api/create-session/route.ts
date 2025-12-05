@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const result = await client.chat.completions.create({
+    const _result = await client.chat.completions.create({
       model: "gpt-4.1-mini",
       messages: [
         { role: "system", content: "ChatKit hosted session init" },

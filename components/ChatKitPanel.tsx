@@ -14,8 +14,7 @@ interface ChatKitPanelProps {
 }
 
 export default function ChatKitPanel({ workflow }: ChatKitPanelProps) {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-
+  const containerRef = useRef<HTMLDivElement>(null!);
   useEffect(() => {
     async function createSession() {
       if (!containerRef.current) return;
