@@ -6,6 +6,14 @@ export default function HomePage() {
   const router = useRouter();
 
   async function start(topic: string, workflowId: string) {
+    // Sprawdź czy istnieje zapisana sesja dla tego tematu
+    const saved = localStorage.getItem(`chat_secret_${topic}`);
+    if (saved) {
+      router.push(`/chat/${topic}?secret=${saved}`);
+      return;
+    }
+
+    // Jeśli nie ma zapisanej sesji → tworzymy nową
     const res = await fetch("/api/create-session", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -15,10 +23,11 @@ export default function HomePage() {
     const data = await res.json();
 
     if (data?.client_secret) {
+      // zapisujemy client secret
+      localStorage.setItem(`chat_secret_${topic}`, data.client_secret);
       router.push(`/chat/${topic}?secret=${encodeURIComponent(data.client_secret)}`);
     } else {
-      console.error("Brak client_secret:", data);
-      alert("Błąd podczas tworzenia sesji.");
+      alert("❌ Błąd podczas tworzenia czatu");
     }
   }
 
@@ -29,10 +38,7 @@ export default function HomePage() {
       <button
         className="bg-blue-600 text-white px-6 py-3 rounded-full text-xl"
         onClick={() =>
-          start(
-            "dofinansowania",
-            process.env.NEXT_PUBLIC_CHATKIT_WORKFLOW_DOF!
-          )
+          start("dofinansowania", process.env.NEXT_PUBLIC_CHATKIT_WORKFLOW_DOF!)
         }
       >
         💸 Dofinansowania
