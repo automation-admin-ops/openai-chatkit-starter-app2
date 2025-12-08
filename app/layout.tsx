@@ -1,9 +1,17 @@
-import "./globals.css";
+import './globals.css';
+import Script from 'next/script';
+import { ReactNode } from 'react';
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="pl">
-      <body>{children}</body>
+    <html lang="en">
+      <body>
+        {children}
+        <Script
+          src="https://cdn.platform.openai.com/deployments/chatkit/chatkit.js"
+          strategy="afterInteractive"
+        />
+      </body>
     </html>
   );
 }

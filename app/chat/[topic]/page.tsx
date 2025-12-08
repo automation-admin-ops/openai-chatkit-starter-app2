@@ -1,23 +1,28 @@
-"use client";
+'use client';
 
-import { Chat } from "@openai/chatkit/client"; // 👈 KLUCZOWA ZMIANA
-import { useSearchParams } from "next/navigation";
+import { ChatKit, useChatKit } from '@openai/chatkit-react';
+import { useSearchParams } from 'next/navigation';
 
 export default function ChatPage() {
   const params = useSearchParams();
-  const sessionId = params.get("session");
+  const clientSecret = params.get('secret');
 
-  if (!sessionId) {
-    return <p>❌ Brak sesji. Wróć na stronę główną.</p>;
-  }
+  const { control } = useChatKit({
+    clientSecret: clientSecret || undefined,
+    api: {
+      getClientSecret: async () => {
+        const res = await fetch('/api/create-session', { method: 'POST' });
+        const data = await res.json();
+        return data.client_secret;
+      }
+    }
+  });
+
+  if (!clientSecret) return <p>❌ Brak parametru `secret` w URL.</p>;
 
   return (
     <div className="h-screen">
-      <Chat
-        session={sessionId}
-        theme="light"
-        style={{ height: "100%", width: "100%" }}
-      />
+      <ChatKit control={control} className="h-full w-full" />
     </div>
   );
 }
