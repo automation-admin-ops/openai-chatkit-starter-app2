@@ -1,25 +1,25 @@
-"use client";
-import { ChatKitPanel } from "@/components/ChatKitPanel";
+'use client';
 
-const WORKFLOWS: Record<string, string> = {
-  dofinansowania: process.env.NEXT_PUBLIC_CHATKIT_WORKFLOW_DOF!,
-  ogolny: process.env.NEXT_PUBLIC_CHATKIT_WORKFLOW_OGOL!,
-};
+import ChatKitPanel from '@/components/ChatKitPanel';
+import { useSearchParams } from 'next/navigation';
 
-export default function ChatPage({ topic }: { topic: string }) {
-  const workflow = WORKFLOWS[topic];
+export default function ChatPage() {
+  const params = useSearchParams();
+  const clientSecret = params.get('secret');
+
+  if (!clientSecret) {
+    return (
+      <main className="flex items-center justify-center min-h-screen">
+        <p className="text-red-600 font-medium">
+          ❌ Brak `secret` w URL. Nie można uruchomić czatu.
+        </p>
+      </main>
+    );
+  }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-end bg-white dark:bg-slate-950">
-      <div className="mx-auto w-full max-w-5xl">
-        <ChatKitPanel
-          workflow={workflow}
-          theme="light"
-          onWidgetAction={async () => {}}
-          onResponseEnd={() => {}}
-          onThemeRequest={() => {}}
-        />
-      </div>
-    </main>
+    <div className="h-screen w-screen">
+      <ChatKitPanel clientSecret={clientSecret} />
+    </div>
   );
 }
