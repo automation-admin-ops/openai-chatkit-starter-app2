@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ChatKit } from "@openai/chatkit";
+import { ChatKit } from "@openai/chatkit/server"; // 👈 KLUCZOWA ZMIANA
 
 export async function POST(req: NextRequest) {
   try {

@@ -1,6 +1,6 @@
 "use client";
 
-import { Chat } from "@openai/chatkit";
+import { Chat } from "@openai/chatkit/client"; // 👈 KLUCZOWA ZMIANA
 import { useSearchParams } from "next/navigation";
 
 export default function ChatPage() {
