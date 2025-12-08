@@ -8,17 +8,19 @@ export default function ChatPage() {
   const clientSecret = params.get('secret');
 
   const { control } = useChatKit({
-    clientSecret: clientSecret || undefined,
     api: {
       getClientSecret: async () => {
-        const res = await fetch('/api/create-session', { method: 'POST' });
-        const data = await res.json();
-        return data.client_secret;
+        if (!clientSecret) {
+          throw new Error('Brak client_secret w URL');
+        }
+        return clientSecret;
       }
     }
   });
 
-  if (!clientSecret) return <p>❌ Brak parametru `secret` w URL.</p>;
+  if (!clientSecret) {
+    return <p>❌ Brak parametru `secret` w URL.</p>;
+  }
 
   return (
     <div className="h-screen">
