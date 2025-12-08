@@ -1,30 +1,26 @@
-'use client';
+"use client";
 
-import { ChatKit, useChatKit } from '@openai/chatkit-react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useParams } from "next/navigation";
+import ChatKitPanel from "@/components/ChatKitPanel";
 
-export default function ChatPage() {
+export default function ChatTopicPage() {
+  const { topic } = useParams();
   const params = useSearchParams();
-  const clientSecret = params.get('secret');
+  const secret = params.get("secret");
 
-  const { control } = useChatKit({
-    api: {
-      getClientSecret: async () => {
-        if (!clientSecret) {
-          throw new Error('Brak client_secret w URL');
-        }
-        return clientSecret;
-      }
-    }
-  });
-
-  if (!clientSecret) {
-    return <p>❌ Brak parametru `secret` w URL.</p>;
+  if (!secret) {
+    return (
+      <main className="flex items-center justify-center min-h-screen">
+        <p className="text-red-600 font-semibold text-lg">
+          ❌ Brak `secret` w URL. Nie można uruchomić czatu.
+        </p>
+      </main>
+    );
   }
 
   return (
-    <div className="h-screen">
-      <ChatKit control={control} className="h-full w-full" />
+    <div className="h-screen w-screen">
+      <ChatKitPanel clientSecret={secret} />
     </div>
   );
 }
