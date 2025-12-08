@@ -1,40 +1,36 @@
-import { NextResponse } from "next/server";
-import OpenAI from "openai";
+import { NextRequest, NextResponse } from "next/server";
+import { ChatKit } from "@openai/chatkit";
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    const { workflow } = await req.json();
 
-    // wymagane pole z workflow (ID musi przyjść z frontu)
-    if (!body?.workflow?.id) {
+    if (!workflow) {
       return NextResponse.json(
-        { error: "Missing workflow.id" },
+        { error: "Missing workflow ID" },
         { status: 400 }
       );
     }
 
-    const client = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY!,
+    if (!process.env.OPENAI_API_KEY) {
+      return NextResponse.json(
+        { error: "Missing OPENAI_API_KEY in environment" },
+        { status: 500 }
+      );
+    }
+
+    const ck = new ChatKit({
+      apiKey: process.env.OPENAI_API_KEY
     });
 
-    // Tworzymy interaktywną sesję ChatKit z API
-    const session = await client.chat.completions.create({
-      model: "gpt-4.1-mini",
-      messages: [
-        { role: "system", content: "ChatKit hosted session init" },
-        { role: "user", content: "initialize" },
-      ],
-      stream: false,
+    const session = await ck.sessions.create({
+      workflow
     });
 
-    return NextResponse.json({
-      session_id: session.id,
-      workflow: body.workflow.id,
-    });
-  } catch (err) {
-    console.error("❌ Session error:", err);
+    return NextResponse.json(session);
+  } catch (err: any) {
     return NextResponse.json(
-      { error: "Internal error creating session" },
+      { error: err.message || "Unknown error" },
       { status: 500 }
     );
   }
