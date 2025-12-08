@@ -20,7 +20,7 @@ export default function ChatTopicPage() {
 
   return (
     <div className="h-screen w-screen">
-      <ChatKitPanel clientSecret={secret} />
+      <ChatKitPanel clientSecret={secret} topic={String(topic)} />
     </div>
   );
 }

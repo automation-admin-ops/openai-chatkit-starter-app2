@@ -6,14 +6,23 @@ export default function HomePage() {
   const router = useRouter();
 
   async function start(topic: string, workflowId: string) {
-    // Sprawdź czy istnieje zapisana sesja dla tego tematu
-    const saved = localStorage.getItem(`chat_secret_${topic}`);
-    if (saved) {
-      router.push(`/chat/${topic}?secret=${saved}`);
+    const savedSession = localStorage.getItem(`chat_session_${topic}`);
+
+    // Jeśli mamy wcześniejszą sesję → pobieramy nowy secret
+    if (savedSession) {
+      const res = await fetch("/api/create-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId: savedSession }),
+      });
+
+      const data = await res.json();
+      localStorage.setItem(`chat_secret_${topic}`, data.client_secret);
+      router.push(`/chat/${topic}?secret=${data.client_secret}`);
       return;
     }
 
-    // Jeśli nie ma zapisanej sesji → tworzymy nową
+    // Jeśli nie mamy sesji → tworzymy nową
     const res = await fetch("/api/create-session", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -21,14 +30,9 @@ export default function HomePage() {
     });
 
     const data = await res.json();
-
-    if (data?.client_secret) {
-      // zapisujemy client secret
-      localStorage.setItem(`chat_secret_${topic}`, data.client_secret);
-      router.push(`/chat/${topic}?secret=${encodeURIComponent(data.client_secret)}`);
-    } else {
-      alert("❌ Błąd podczas tworzenia czatu");
-    }
+    localStorage.setItem(`chat_secret_${topic}`, data.client_secret);
+    localStorage.setItem(`chat_session_${topic}`, data.session_id);
+    router.push(`/chat/${topic}?secret=${data.client_secret}`);
   }
 
   return (
