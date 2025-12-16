@@ -74,7 +74,9 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({
   	workflow: workflowId,
+  	user: "public", // 👈 WYMAGANE
 	}),
+
     }
   );
 
