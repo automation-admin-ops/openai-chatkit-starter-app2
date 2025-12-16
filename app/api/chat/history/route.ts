@@ -6,12 +6,10 @@ export async function GET(req: Request) {
   const chatType = searchParams.get("chatType");
 
   const chatKey =
-    chatType === "grants"
-      ? "chat:grants"
-      : "chat:general";
+    chatType === "grants" ? "chat:grants" : "chat:general";
 
-  const raw = await redis.get(chatKey);
-  const history = raw ? JSON.parse(raw) : [];
+  const history =
+    (await redis.get<any[]>(chatKey)) ?? [];
 
   return NextResponse.json(history);
 }
