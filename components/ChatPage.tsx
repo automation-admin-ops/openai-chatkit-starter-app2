@@ -1,13 +1,9 @@
 import ChatKitPanel from "./ChatKitPanel";
 
 export default function ChatPage({
-  topic,
+  clientSecret,
 }: {
-  topic: "general" | "grants";
+  clientSecret: string;
 }) {
-  return (
-    <div className="h-full">
-      <ChatKitPanel chatType={topic} />
-    </div>
-  );
+  return <ChatKitPanel clientSecret={clientSecret} />;
 }

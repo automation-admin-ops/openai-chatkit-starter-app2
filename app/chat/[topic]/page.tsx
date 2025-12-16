@@ -2,13 +2,14 @@ import ChatPage from "@/components/ChatPage";
 
 export default function Page({
   params,
+  searchParams,
 }: {
   params: { topic: string };
+  searchParams: { secret?: string };
 }) {
-  const topic =
-    params.topic === "dofinansowania"
-      ? "grants"
-      : "general";
+  if (!searchParams.secret) {
+    return <div>Brak client secret</div>;
+  }
 
-  return <ChatPage topic={topic} />;
+  return <ChatPage clientSecret={searchParams.secret} />;
 }
