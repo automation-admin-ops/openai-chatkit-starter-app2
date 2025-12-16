@@ -4,18 +4,20 @@ import { redis } from "@/lib/redis";
 export async function POST(req: Request) {
   const { chatType, message } = await req.json();
 
-  if (!message || !chatType) {
+  if (!chatType || !message) {
     return NextResponse.json(
       { error: "Brak chatType lub message" },
       { status: 400 }
     );
   }
 
-  const chatKey =
-    chatType === "grants" ? "chat:grants" : "chat:general";
+  const key =
+    chatType === "grants"
+      ? "chat:grants"
+      : "chat:general";
 
-  const history =
-    (await redis.get<any[]>(chatKey)) ?? [];
+  const raw = await redis.get(key);
+  const history = raw ? JSON.parse(raw) : [];
 
   history.push({
     role: "user",
@@ -23,7 +25,7 @@ export async function POST(req: Request) {
     ts: Date.now(),
   });
 
-  await redis.set(chatKey, history);
+  await redis.set(key, JSON.stringify(history));
 
   return NextResponse.json({ ok: true });
 }

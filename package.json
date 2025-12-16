@@ -10,11 +10,11 @@
   },
   "dependencies": {
     "@openai/chatkit-react": ">=1.1.1 <2.0.0",
-    "@upstash/redis": "^1.35.8",
     "next": "16.0.7",
     "openai": "^4.28.4",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "redis": "^5.10.0"
   },
   "optionalDependencies": {
     "@tailwindcss/oxide-linux-x64-gnu": "4.1.11",
