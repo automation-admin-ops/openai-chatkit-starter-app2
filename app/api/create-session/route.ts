@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 
-export const runtime = "edge";
-
 export async function POST(req: NextRequest) {
   const body = await req.json();
 
@@ -13,7 +11,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // 🔁 1. Odświeżenie client_secret dla istniejącej sesji
+  // 🔁 1. Odświeżenie secreta dla istniejącej sesji
   if (body.sessionId) {
     const res = await fetch(
       `https://api.openai.com/v1/chatkit/sessions/${body.sessionId}/client_secret`,
@@ -28,6 +26,14 @@ export async function POST(req: NextRequest) {
     );
 
     const data = await res.json();
+
+    if (!data.client_secret) {
+      return NextResponse.json(
+        { error: "Nie udało się odświeżyć secreta" },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json({
       client_secret: data.client_secret,
     });
@@ -40,13 +46,19 @@ export async function POST(req: NextRequest) {
 
   if (chatType === "general") {
     workflowId = process.env.WORKFLOW_GENERAL_ID;
-  } else if (chatType === "dofinansowania") {
+  }
+
+  if (chatType === "dofinansowania") {
     workflowId = process.env.WORKFLOW_GRANTS_ID;
   }
 
   if (!workflowId) {
     return NextResponse.json(
-      { error: "Nieznany chatType lub brak workflowId" },
+      {
+        error:
+          "Nieznany chatType lub brak WORKFLOW_*_ID w ENV",
+        received: chatType,
+      },
       { status: 400 }
     );
   }
@@ -67,6 +79,13 @@ export async function POST(req: NextRequest) {
   );
 
   const data = await res.json();
+
+  if (!data.client_secret || !data.id) {
+    return NextResponse.json(
+      { error: "Błąd tworzenia sesji", raw: data },
+      { status: 500 }
+    );
+  }
 
   return NextResponse.json({
     client_secret: data.client_secret,
