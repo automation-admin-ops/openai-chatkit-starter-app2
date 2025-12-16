@@ -3,11 +3,21 @@ import ChatPage from "@/components/ChatPage";
 export default function Page({
   searchParams,
 }: {
-  searchParams: { secret?: string };
+  searchParams: {
+    session_id?: string;
+    secret?: string;
+  };
 }) {
-  if (!searchParams.secret) {
-    return <div>Brak client secret</div>;
+  if (!searchParams.session_id || !searchParams.secret) {
+    return <div>Brak danych sesji</div>;
   }
 
-  return <ChatPage clientSecret={searchParams.secret} />;
+  return (
+    <ChatPage
+      session={{
+        id: searchParams.session_id,
+        client_secret: searchParams.secret,
+      }}
+    />
+  );
 }

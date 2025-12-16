@@ -2,10 +2,15 @@
 
 import { ChatKit } from "@openai/chatkit-react";
 
+type Session = {
+  id: string;
+  client_secret: string;
+};
+
 export default function ChatKitPanel({
-  clientSecret,
+  session,
 }: {
-  clientSecret: string;
+  session: Session;
 }) {
-  return <ChatKit clientSecret={clientSecret} />;
+  return <ChatKit session={session} />;
 }

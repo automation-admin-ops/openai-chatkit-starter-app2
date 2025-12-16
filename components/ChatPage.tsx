@@ -1,9 +1,12 @@
 import ChatKitPanel from "./ChatKitPanel";
 
 export default function ChatPage({
-  clientSecret,
+  session,
 }: {
-  clientSecret: string;
+  session: {
+    id: string;
+    client_secret: string;
+  };
 }) {
-  return <ChatKitPanel clientSecret={clientSecret} />;
+  return <ChatKitPanel session={session} />;
 }
