@@ -22,7 +22,8 @@ export default function HomePage() {
       const data = await res.json();
       if (data?.client_secret) {
         localStorage.setItem(secretKey, data.client_secret);
-        return router.push(`/chat/${chatType}?secret=${data.client_secret}`);
+        router.push(`/chat/${chatType}?secret=${data.client_secret}`);
+        return;
       }
 
       // fallback
@@ -30,7 +31,7 @@ export default function HomePage() {
       localStorage.removeItem(secretKey);
     }
 
-    // 🆕 nowa sesja – backend sam dobiera workflowId
+    // 🆕 nowa sesja
     const res = await fetch("/api/create-session", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -47,18 +48,45 @@ export default function HomePage() {
   }
 
   return (
-    <main style={{ padding: 24 }}>
-      <h1 style={{ fontSize: 24, marginBottom: 16 }}>Wybierz chat</h1>
+    <main
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 24,
+      }}
+    >
+      <h1 style={{ fontSize: 28, fontWeight: 600 }}>
+        Wybierz chat
+      </h1>
 
-      <div style={{ display: "flex", gap: 12 }}>
-        <button onClick={() => start("general")}>
-          Ogólny
+      <div style={{ display: "flex", gap: 20 }}>
+        <button
+          onClick={() => start("general")}
+          style={buttonStyle}
+        >
+          💬 Ogólny
         </button>
 
-        <button onClick={() => start("dofinansowania")}>
-          Dofinansowania
+        <button
+          onClick={() => start("dofinansowania")}
+          style={buttonStyle}
+        >
+          💰 Dofinansowania
         </button>
       </div>
     </main>
   );
 }
+
+const buttonStyle: React.CSSProperties = {
+  padding: "14px 22px",
+  fontSize: 16,
+  borderRadius: 10,
+  border: "1px solid #ccc",
+  cursor: "pointer",
+  background: "#fff",
+  transition: "all 0.2s ease",
+};
