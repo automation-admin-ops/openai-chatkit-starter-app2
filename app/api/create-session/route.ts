@@ -73,10 +73,11 @@ export async function POST(req: NextRequest) {
         "OpenAI-Beta": "chatkit_beta=v1",
       },
       body: JSON.stringify({
-  	workflow: workflowId,
-  	user: "public", // 👈 WYMAGANE
+  	workflow: {
+    	id: workflowId,
+  	},
+  	user: "public",
 	}),
-
     }
   );
 
