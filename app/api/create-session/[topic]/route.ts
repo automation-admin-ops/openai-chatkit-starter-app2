@@ -1,59 +1,41 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import OpenAI from "openai";
+import { normalizeTopic, type ChatTopic } from "@/lib/chat";
 import { getSessionId } from "@/lib/session";
-import { getRedis } from "@/lib/redis";
-import { workflowIdForTopic } from "@/lib/chat";
 
-async function handle(topic: string) {
-  const sessionId = await getSessionId();
-  const redis = await getRedis();
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
-  const key = `chatkit:${topic}:${sessionId}`;
-
-  const cached = await redis.get(key);
-  if (cached) {
-    return Response.json({ client_secret: cached });
-  }
-
-  const res = await fetch("https://api.openai.com/v1/chatkit/sessions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.OPENAI_API_KEY!}`,
-      "Content-Type": "application/json",
-      "OpenAI-Beta": "chatkit_beta=v1",
-    },
-    body: JSON.stringify({
-      workflow: { id: workflowIdForTopic(topic as any) },
-      user: sessionId,
-    }),
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text);
-  }
-
-  const data = await res.json();
-
-  await redis.set(key, data.client_secret, {
-    EX: 60 * 60 * 24,
-  });
-
-  return Response.json({ client_secret: data.client_secret });
+function workflowIdFor(topic: ChatTopic) {
+  if (topic === "grants") return process.env.WORKFLOW_GRANTS_ID;
+  return process.env.WORKFLOW_GENERAL_ID;
 }
 
 export async function POST(
   _req: NextRequest,
   context: { params: Promise<{ topic: string }> }
 ) {
-  const { topic } = await context.params;
-  return handle(topic);
-}
+  const { topic: rawTopic } = await context.params;
+  const topic = normalizeTopic(rawTopic);
 
-// ⬇️ TYLKO DO DEBUGU (można usunąć później)
-export async function GET(
-  _req: NextRequest,
-  context: { params: Promise<{ topic: string }> }
-) {
-  const { topic } = await context.params;
-  return handle(topic);
+  const workflowId = workflowIdFor(topic);
+  if (!workflowId) {
+    return NextResponse.json(
+      { error: `Missing workflow env for topic=${topic}` },
+      { status: 500 }
+    );
+  }
+
+  const sid = await getSessionId();
+
+  // KLUCZ: oddzielny "user" per chat -> historia się nie miesza
+  const user = `${sid}:${topic}`;
+
+  const session = await openai.chatkit.sessions.create({
+    workflow: { id: workflowId },
+    user,
+  });
+
+  return NextResponse.json({ client_secret: session.client_secret });
 }

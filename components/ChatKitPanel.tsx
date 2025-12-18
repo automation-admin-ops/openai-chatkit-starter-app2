@@ -6,26 +6,25 @@ import type { ChatTopic } from "@/lib/chat";
 export default function ChatKitPanel({ topic }: { topic: ChatTopic }) {
   const { control } = useChatKit({
     api: {
-      async getClientSecret(existing) {
-        if (existing) return existing;
-
+      async getClientSecret(existingClientSecret) {
+        // Na start i (opcjonalnie) na refresh pobieramy nowy client_secret.
+        // Na początek możesz zawsze pobierać nowy – będzie działało.
         const res = await fetch(`/api/create-session/${topic}`, {
           method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ existingClientSecret }),
         });
 
         if (!res.ok) {
-          throw new Error("Failed to create ChatKit session");
+          const txt = await res.text();
+          throw new Error(`create-session failed (${res.status}): ${txt}`);
         }
 
-        const data = await res.json();
+        const data: { client_secret: string } = await res.json();
         return data.client_secret;
       },
     },
   });
 
-  return (
-    <div className="flex-1 h-full w-full">
-      <ChatKit control={control} />
-    </div>
-  );
+  return <ChatKit control={control} className="h-full w-full" />;
 }
