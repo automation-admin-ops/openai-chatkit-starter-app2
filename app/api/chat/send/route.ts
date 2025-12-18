@@ -1,31 +1,26 @@
 import { NextResponse } from "next/server";
 import { redis } from "@/lib/redis";
 
-export async function POST(req: Request) {
-  const { chatType, message } = await req.json();
-
-  if (!chatType || !message) {
-    return NextResponse.json(
-      { error: "Brak chatType lub message" },
-      { status: 400 }
-    );
-  }
+export async function POST(request: Request) {
+  const body = await request.json();
+  const topic = body?.topic === "grants" ? "grants" : "general";
 
   const key =
-    chatType === "grants"
+    topic === "grants"
       ? "chat:grants"
       : "chat:general";
 
-  const raw = await redis.get(key);
+  const r = redis(); // ⬅️ KLUCZOWA LINIA
+  const raw = await r.get(key);
   const history = raw ? JSON.parse(raw) : [];
 
   history.push({
     role: "user",
-    content: message,
-    ts: Date.now(),
+    content: body.message,
+    createdAt: new Date().toISOString(),
   });
 
-  await redis.set(key, JSON.stringify(history));
+  await r.set(key, JSON.stringify(history));
 
   return NextResponse.json({ ok: true });
 }
