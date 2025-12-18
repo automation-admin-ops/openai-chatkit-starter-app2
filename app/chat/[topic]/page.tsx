@@ -1,14 +1,20 @@
-import ChatKitPanel from "@/components/ChatKitPanel";
-import type { ChatTopic } from "@/lib/chat";
-
 export default function ChatPage({
   params,
 }: {
-  params: { topic: ChatTopic };
+  params: { topic: string };
 }) {
   return (
-    <div className="min-h-screen h-screen w-screen flex">
-      <ChatKitPanel topic={params.topic} />
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "red",
+        color: "white",
+        fontSize: "24px",
+        padding: "20px",
+      }}
+    >
+      TEST PAGE RENDER
+      <pre>{JSON.stringify(params, null, 2)}</pre>
     </div>
   );
 }
