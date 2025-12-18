@@ -13,15 +13,15 @@ export default function ChatKitPanel({ topic }: { topic: ChatTopic }) {
           method: "POST",
         });
 
-        if (!res.ok) {
-          throw new Error("Failed to create session");
-        }
-
         const data = await res.json();
         return data.client_secret;
       },
     },
   });
 
-  return <ChatKit control={control} className="h-full w-full" />;
+  return (
+    <div className="flex-1 h-full">
+      <ChatKit control={control} className="h-full w-full" />
+    </div>
+  );
 }

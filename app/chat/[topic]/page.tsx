@@ -7,7 +7,7 @@ export default function ChatPage({
   params: { topic: ChatTopic };
 }) {
   return (
-    <div className="h-screen w-screen">
+    <div className="min-h-screen h-screen w-screen flex">
       <ChatKitPanel topic={params.topic} />
     </div>
   );
