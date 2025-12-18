@@ -1,28 +1,30 @@
+import { NextRequest } from "next/server";
 import { redis } from "@/lib/redis";
 import { getSessionId } from "@/lib/session";
 import { isChatTopic, workflowIdForTopic } from "@/lib/chat";
 
 export async function POST(
-  _req: Request,
-  { params }: { params: { topic: string } }
+  _req: NextRequest,
+  context: { params: Promise<{ topic: string }> }
 ) {
-  if (!isChatTopic(params.topic)) {
+  const { topic } = await context.params;
+
+  if (!isChatTopic(topic)) {
     return Response.json({ error: "Invalid topic" }, { status: 404 });
   }
 
-  const topic = params.topic;
   const sid = getSessionId();
   const key = `chatkit:${topic}:${sid}`;
 
   const r = redis();
 
-  // jeśli mamy sesję → zwracamy (persist historii)
+  // 1️⃣ jeśli mamy zapisaną sesję → zwracamy (persist historii)
   const cached = await r.get(key);
   if (cached) {
     return Response.json({ client_secret: cached });
   }
 
-  // tworzymy nową ChatKit session
+  // 2️⃣ tworzymy nową ChatKit session
   const resp = await fetch("https://api.openai.com/v1/chatkit/sessions", {
     method: "POST",
     headers: {
@@ -43,8 +45,10 @@ export async function POST(
 
   const data = await resp.json();
 
-  // zapisujemy na 7 dni
-  await r.set(key, data.client_secret, "EX", 60 * 60 * 24 * 7);
+  // 3️⃣ zapisujemy client_secret (7 dni)
+  await r.set(key, data.client_secret, {
+    EX: 60 * 60 * 24 * 7,
+  });
 
   return Response.json({ client_secret: data.client_secret });
 }
