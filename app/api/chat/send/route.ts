@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { redis } from "@/lib/redis";
+import { getRedis } from "@/lib/redis";
 
 export async function POST(request: Request) {
   const body = await request.json();
@@ -10,8 +10,8 @@ export async function POST(request: Request) {
       ? "chat:grants"
       : "chat:general";
 
-  const r = redis(); // ⬅️ KLUCZOWA LINIA
-  const raw = await r.get(key);
+  const redis = await getRedis(); // ⬅️ POPRAWKA
+  const raw = await redis.get(key);
   const history = raw ? JSON.parse(raw) : [];
 
   history.push({
@@ -20,7 +20,7 @@ export async function POST(request: Request) {
     createdAt: new Date().toISOString(),
   });
 
-  await r.set(key, JSON.stringify(history));
+  await redis.set(key, JSON.stringify(history));
 
   return NextResponse.json({ ok: true });
 }

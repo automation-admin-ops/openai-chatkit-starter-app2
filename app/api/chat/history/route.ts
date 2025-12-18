@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { redis } from "@/lib/redis";
+import { getRedis } from "@/lib/redis";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -10,8 +10,8 @@ export async function GET(request: Request) {
       ? "chat:grants"
       : "chat:general";
 
-  const r = redis(); // ⬅️ WAŻNE
-  const raw = await r.get(key);
+  const redis = await getRedis(); // ⬅️ POPRAWKA
+  const raw = await redis.get(key);
 
   const history = raw ? JSON.parse(raw) : [];
 
