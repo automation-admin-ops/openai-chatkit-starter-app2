@@ -22,10 +22,13 @@ export default function ChatKitPanel({ topic }: { topic: ChatTopic }) {
         return client_secret;
       },
     },
-
-    // ⬇️ TO JEST KLUCZ: dokładnie jak w oryginalnym starterze
-    ui: getThemeConfig(),
   });
 
-  return <ChatKit control={control} className="h-full w-full" />;
+  return (
+    <ChatKit
+      control={control}
+      ui={getThemeConfig()}   // ⬅️ TU JEST JEDYNE WŁAŚCIWE MIEJSCE
+      className="h-full w-full"
+    />
+  );
 }
