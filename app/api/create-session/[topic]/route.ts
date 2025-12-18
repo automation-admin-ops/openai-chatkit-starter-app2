@@ -51,4 +51,9 @@ export async function POST(
 
 // ⬇️ TYLKO DO DEBUGU (można usunąć później)
 export async function GET(
-  _re_
+  _req: NextRequest,
+  context: { params: Promise<{ topic: string }> }
+) {
+  const { topic } = await context.params;
+  return handle(topic);
+}
