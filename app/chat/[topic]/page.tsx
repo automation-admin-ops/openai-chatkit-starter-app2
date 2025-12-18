@@ -1,10 +1,14 @@
 import ChatKitPanel from "@/components/ChatKitPanel";
 import type { ChatTopic } from "@/lib/chat";
 
-export default function Page({
+export default function ChatPage({
   params,
 }: {
   params: { topic: ChatTopic };
 }) {
-  return <ChatKitPanel topic={params.topic} />;
+  return (
+    <div className="h-screen w-screen">
+      <ChatKitPanel topic={params.topic} />
+    </div>
+  );
 }
