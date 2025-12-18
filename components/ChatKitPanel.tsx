@@ -5,9 +5,7 @@ import type { ChatTopic } from "@/lib/chat";
 
 export default function ChatKitPanel({ topic }: { topic: ChatTopic }) {
   const control = useChatKit({
-    session: {
-      endpoint: `/api/create-session/${topic}`,
-    },
+    endpoint: `/api/create-session/${topic}`,
   });
 
   return (
