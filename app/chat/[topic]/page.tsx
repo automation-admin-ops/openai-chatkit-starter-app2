@@ -1,20 +1,29 @@
-export default function ChatPage({
-  params,
-}: {
-  params: { topic: string };
-}) {
+"use client";
+
+import { ChatKit, useChatKit } from "@openai/chatkit-react";
+
+export default function ChatPage() {
+  const { control, status } = useChatKit({
+    api: {
+      async getClientSecret() {
+        const res = await fetch("/api/create-session/general", {
+          method: "POST",
+        });
+        const data = await res.json();
+        return data.client_secret;
+      },
+    },
+  });
+
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "red",
-        color: "white",
-        fontSize: "24px",
-        padding: "20px",
-      }}
-    >
-      TEST PAGE RENDER
-      <pre>{JSON.stringify(params, null, 2)}</pre>
+    <div style={{ minHeight: "100vh", padding: 20 }}>
+      <h1>STATUS: {status}</h1>
+
+      {status === "ready" ? (
+        <ChatKit control={control} />
+      ) : (
+        <p>Initializing ChatKit…</p>
+      )}
     </div>
   );
 }
