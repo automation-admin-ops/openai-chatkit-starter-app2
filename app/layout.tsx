@@ -1,4 +1,5 @@
 import "./globals.css";
+import { ChatKitProvider } from "@openai/chatkit-react";
 
 export default function RootLayout({
   children,
@@ -8,7 +9,9 @@ export default function RootLayout({
   return (
     <html lang="pl">
       <body className="h-screen w-screen overflow-hidden">
-        {children}
+        <ChatKitProvider>
+          {children}
+        </ChatKitProvider>
       </body>
     </html>
   );
