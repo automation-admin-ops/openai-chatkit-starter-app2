@@ -3,10 +3,6 @@
 import { ChatKit, useChatKit } from "@openai/chatkit-react";
 
 export default function ChatKitPanel({ topic }: { topic: string }) {
-  if (!topic) {
-    return <div>ERROR: topic is undefined</div>;
-  }
-
   const { control } = useChatKit({
     api: {
       async getClientSecret() {
@@ -15,8 +11,7 @@ export default function ChatKitPanel({ topic }: { topic: string }) {
         });
 
         if (!res.ok) {
-          const txt = await res.text();
-          throw new Error(txt);
+          throw new Error("Failed to create session");
         }
 
         const data = await res.json();

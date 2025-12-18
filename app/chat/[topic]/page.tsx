@@ -10,9 +10,9 @@ export default function ChatPage({
   }
 
   return (
-    <div className="h-screen w-screen flex">
-      {/* ⬇️ TU JEST JEDYNE ŹRÓDŁO PRAWDY */}
-      <ChatKitPanel key={params.topic} topic={params.topic} />
+    <div className="h-screen w-screen">
+      {/* ⬇️ przekazujemy topic do CLIENT COMPONENT */}
+      <ChatKitPanel topic={params.topic} />
     </div>
   );
 }
