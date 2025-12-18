@@ -11,6 +11,10 @@ export async function POST(
   const workflowId = workflowIdForTopic(topic);
   const sessionId = await getSessionId();
 
+  // ✅ DEBUG — TERAZ MA SENS
+  console.log("CHAT TOPIC:", topic);
+  console.log("WORKFLOW ID:", workflowId);
+
   const res = await fetch("https://api.openai.com/v1/chatkit/sessions", {
     method: "POST",
     headers: {
@@ -35,5 +39,3 @@ export async function POST(
     client_secret: data.client_secret,
   });
 }
-console.log("CHAT TOPIC:", topic);
-console.log("WORKFLOW ID:", workflowId);
