@@ -1,25 +1,20 @@
-import { createClient } from "redis";
+import { createClient, RedisClientType } from "redis";
 
-let client: ReturnType<typeof createClient> | null = null;
+let client: RedisClientType | null = null;
 
-export function redis() {
-  if (!client) {
-    if (!process.env.REDIS_URL) {
-      throw new Error("Missing REDIS_URL");
-    }
+export async function getRedis(): Promise<RedisClientType> {
+  if (client) return client;
 
-    client = createClient({
-      url: process.env.REDIS_URL,
-    });
+  client = createClient({
+    url: process.env.REDIS_URL,
+  });
 
-    client.on("error", (err) => {
-      console.error("Redis Client Error", err);
-    });
+  client.on("error", (err) => {
+    console.error("Redis Client Error", err);
+  });
 
-    // UWAGA: w App Router musimy jawnie połączyć
-    if (!client.isOpen) {
-      client.connect();
-    }
+  if (!client.isOpen) {
+    await client.connect();
   }
 
   return client;

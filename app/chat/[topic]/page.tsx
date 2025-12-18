@@ -1,4 +1,4 @@
-import ChatPage from "@/components/ChatPage";
+import ChatKitPanel from "@/components/ChatKitPanel";
 import type { ChatTopic } from "@/lib/chat";
 
 export default function Page({
@@ -6,5 +6,5 @@ export default function Page({
 }: {
   params: { topic: ChatTopic };
 }) {
-  return <ChatPage topic={params.topic} />;
+  return <ChatKitPanel topic={params.topic} />;
 }

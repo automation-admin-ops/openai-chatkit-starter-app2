@@ -1,20 +1,19 @@
 import { cookies } from "next/headers";
-import { nanoid } from "nanoid";
 
-export function getSessionId() {
-  const store = cookies();
+export async function getSessionId(): Promise<string> {
+  const store = await cookies();
   const existing = store.get("sid")?.value;
 
-  if (existing) return existing;
+  if (existing) {
+    return existing;
+  }
 
-  const sid = nanoid();
-  store.set("sid", sid, {
+  const id = crypto.randomUUID();
+  store.set("sid", id, {
     httpOnly: true,
-    path: "/",
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    maxAge: 60 * 60 * 24 * 30,
+    path: "/",
   });
 
-  return sid;
+  return id;
 }

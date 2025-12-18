@@ -1,54 +1,47 @@
-import { NextRequest } from "next/server";
-import { redis } from "@/lib/redis";
+import { NextRequest, NextResponse } from "next/server";
 import { getSessionId } from "@/lib/session";
-import { isChatTopic, workflowIdForTopic } from "@/lib/chat";
+import { getRedis } from "@/lib/redis";
+import type { ChatTopic } from "@/lib/chat";
 
 export async function POST(
   _req: NextRequest,
-  context: { params: Promise<{ topic: string }> }
+  { params }: { params: { topic: ChatTopic } }
 ) {
-  const { topic } = await context.params;
+  const sessionId = await getSessionId(); // ⬅️ MUSI BYĆ await
+  const redis = await getRedis();
 
-  if (!isChatTopic(topic)) {
-    return Response.json({ error: "Invalid topic" }, { status: 404 });
+  const key = `chatkit:${params.topic}:${sessionId}`;
+
+  const existing = await redis.get(key);
+  if (existing) {
+    return NextResponse.json({
+      client_secret: existing,
+    });
   }
 
-  const sid = getSessionId();
-  const key = `chatkit:${topic}:${sid}`;
-
-  const r = redis();
-
-  // 1️⃣ jeśli mamy zapisaną sesję → zwracamy (persist historii)
-  const cached = await r.get(key);
-  if (cached) {
-    return Response.json({ client_secret: cached });
-  }
-
-  // 2️⃣ tworzymy nową ChatKit session
-  const resp = await fetch("https://api.openai.com/v1/chatkit/sessions", {
+  const res = await fetch("https://api.openai.com/v1/realtime/sessions", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      Authorization: `Bearer ${process.env.OPENAI_API_KEY!}`,
       "Content-Type": "application/json",
-      "OpenAI-Beta": "chatkit_beta=v1",
     },
     body: JSON.stringify({
-      workflow: { id: workflowIdForTopic(topic) },
-      user: sid,
+      model: "gpt-4o-realtime-preview",
     }),
   });
 
-  if (!resp.ok) {
-    const text = await resp.text();
-    return Response.json({ error: text }, { status: 500 });
+  if (!res.ok) {
+    const text = await res.text();
+    return new NextResponse(text, { status: 500 });
   }
 
-  const data = await resp.json();
+  const data = await res.json();
 
-  // 3️⃣ zapisujemy client_secret (7 dni)
-  await r.set(key, data.client_secret, {
-    EX: 60 * 60 * 24 * 7,
+  await redis.set(key, data.client_secret, {
+    EX: 60 * 60, // 1 godzina
   });
 
-  return Response.json({ client_secret: data.client_secret });
+  return NextResponse.json({
+    client_secret: data.client_secret,
+  });
 }
