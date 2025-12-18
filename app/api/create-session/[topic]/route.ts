@@ -8,7 +8,7 @@ export async function POST(
 ) {
   const { topic } = await context.params;
 
-  const workflowId = workflowIdForTopic(topic as any);
+  const workflowId = workflowIdForTopic(topic);
   const sessionId = await getSessionId();
 
   const res = await fetch("https://api.openai.com/v1/chatkit/sessions", {
@@ -20,7 +20,7 @@ export async function POST(
     },
     body: JSON.stringify({
       workflow: { id: workflowId },
-      user: `${sessionId}:${topic}`, // 🔑 separacja historii
+      user: `${sessionId}:${topic}`,
     }),
   });
 
