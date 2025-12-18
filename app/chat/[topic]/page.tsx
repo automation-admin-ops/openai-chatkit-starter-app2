@@ -1,17 +1,13 @@
 import ChatKitPanel from "@/components/ChatKitPanel";
-import { normalizeTopic } from "@/lib/chat";
 
-export default async function ChatPage({
+export default function ChatPage({
   params,
 }: {
-  params: Promise<{ topic: string }>;
+  params: { topic: string };
 }) {
-  const { topic: rawTopic } = await params;
-  const topic = normalizeTopic(rawTopic);
-
   return (
-    <div className="h-[100svh] w-full">
-      <ChatKitPanel topic={topic} />
+    <div className="h-screen w-screen flex">
+      <ChatKitPanel topic={params.topic as any} />
     </div>
   );
 }
