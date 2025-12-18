@@ -46,4 +46,9 @@ export async function POST(
   context: { params: Promise<{ topic: string }> }
 ) {
   const { topic } = await context.params;
-  return handle(topic
+  return handle(topic);
+}
+
+// ⬇️ TYLKO DO DEBUGU (można usunąć później)
+export async function GET(
+  _re_
