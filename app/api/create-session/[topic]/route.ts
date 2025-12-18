@@ -35,3 +35,5 @@ export async function POST(
     client_secret: data.client_secret,
   });
 }
+console.log("CHAT TOPIC:", topic);
+console.log("WORKFLOW ID:", workflowId);

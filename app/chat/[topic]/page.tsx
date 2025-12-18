@@ -7,7 +7,8 @@ export default function ChatPage({
 }) {
   return (
     <div className="h-screen w-screen flex">
-      <ChatKitPanel topic={params.topic as any} />
+      {/* 🔑 key WYMUSZA odmontowanie ChatKit przy zmianie topic */}
+      <ChatKitPanel key={params.topic} topic={params.topic} />
     </div>
   );
 }
