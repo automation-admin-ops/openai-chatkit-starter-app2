@@ -1,17 +1,10 @@
-export type ChatTopic = "general" | "grants";
+export type ChatTopic = "general" | "dofinansowania";
 
-export function isChatTopic(value: string): value is ChatTopic {
-  return value === "general" || value === "grants";
-}
-
-export function workflowIdForTopic(topic: ChatTopic): string {
-  if (topic === "general") {
-    const id = process.env.WORKFLOW_GENERAL_ID;
-    if (!id) throw new Error("Missing WORKFLOW_GENERAL_ID");
-    return id;
+export function workflowIdForTopic(topic: ChatTopic) {
+  switch (topic) {
+    case "general":
+      return process.env.OPENAI_WORKFLOW_GENERAL!;
+    case "dofinansowania":
+      return process.env.OPENAI_WORKFLOW_DOFINANSOWANIA!;
   }
-
-  const id = process.env.WORKFLOW_GRANTS_ID;
-  if (!id) throw new Error("Missing WORKFLOW_GRANTS_ID");
-  return id;
 }
