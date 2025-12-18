@@ -1,7 +1,7 @@
 "use client";
 
 import { ChatKit, useChatKit } from "@openai/chatkit-react";
-import { config } from "@/lib/config";
+import { getThemeConfig } from "@/lib/config";
 import type { ChatTopic } from "@/lib/chat";
 
 export default function ChatKitPanel({ topic }: { topic: ChatTopic }) {
@@ -22,7 +22,9 @@ export default function ChatKitPanel({ topic }: { topic: ChatTopic }) {
         return client_secret;
       },
     },
-    ui: config.ui, // ← TO JEST KLUCZ DO WYGLĄDU
+
+    // ⬇️ TO JEST KLUCZ: dokładnie jak w oryginalnym starterze
+    ui: getThemeConfig(),
   });
 
   return <ChatKit control={control} className="h-full w-full" />;
