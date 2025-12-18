@@ -7,7 +7,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pl" className="h-full">
-      <body className="h-full min-h-screen bg-white text-black">
+      <body className="h-full min-h-screen">
         {children}
       </body>
     </html>

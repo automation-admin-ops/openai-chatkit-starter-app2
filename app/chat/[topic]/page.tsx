@@ -1,29 +1,14 @@
-"use client";
+import ChatKitPanel from "@/components/ChatKitPanel";
+import type { ChatTopic } from "@/lib/chat";
 
-import { ChatKit, useChatKit } from "@openai/chatkit-react";
-
-export default function ChatPage() {
-  const { control, status } = useChatKit({
-    api: {
-      async getClientSecret() {
-        const res = await fetch("/api/create-session/general", {
-          method: "POST",
-        });
-        const data = await res.json();
-        return data.client_secret;
-      },
-    },
-  });
-
+export default function ChatPage({
+  params,
+}: {
+  params: { topic: ChatTopic };
+}) {
   return (
-    <div style={{ minHeight: "100vh", padding: 20 }}>
-      <h1>STATUS: {status}</h1>
-
-      {status === "ready" ? (
-        <ChatKit control={control} />
-      ) : (
-        <p>Initializing ChatKit…</p>
-      )}
+    <div className="h-screen w-screen flex">
+      <ChatKitPanel topic={params.topic} />
     </div>
   );
 }

@@ -13,6 +13,10 @@ export default function ChatKitPanel({ topic }: { topic: ChatTopic }) {
           method: "POST",
         });
 
+        if (!res.ok) {
+          throw new Error("Failed to create ChatKit session");
+        }
+
         const data = await res.json();
         return data.client_secret;
       },
@@ -20,8 +24,8 @@ export default function ChatKitPanel({ topic }: { topic: ChatTopic }) {
   });
 
   return (
-    <div className="flex-1 h-full">
-      <ChatKit control={control} className="h-full w-full" />
+    <div className="flex-1 h-full w-full">
+      <ChatKit control={control} />
     </div>
   );
 }
