@@ -4,13 +4,25 @@ import { ChatKit, useChatKit } from "@openai/chatkit-react";
 import type { ChatTopic } from "@/lib/chat";
 
 export default function ChatKitPanel({ topic }: { topic: ChatTopic }) {
-  const control = useChatKit();
+  const { control } = useChatKit({
+    api: {
+      async getClientSecret(existing) {
+        if (existing) return existing;
 
-  return (
-    <ChatKit
-      control={control}
-      endpoint={`/api/create-session/${topic}`}
-      className="h-full w-full"
-    />
-  );
+        const res = await fetch(`/api/create-session/${topic}`, {
+          method: "POST",
+        });
+
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(`Failed to create session: ${text}`);
+        }
+
+        const data = await res.json();
+        return data.client_secret;
+      },
+    },
+  });
+
+  return <ChatKit control={control} className="h-full w-full" />;
 }
