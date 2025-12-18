@@ -11,7 +11,8 @@ export default function ChatKitPanel({ topic }: { topic: string }) {
         });
 
         if (!res.ok) {
-          throw new Error("Failed to create session");
+          const txt = await res.text();
+          throw new Error(txt || "Failed to create session");
         }
 
         const data = await res.json();
