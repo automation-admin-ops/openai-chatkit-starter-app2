@@ -1,23 +1,19 @@
-import ChatPage from "@/components/ChatPage";
+import { redirect } from "next/navigation";
+import ChatKitPanel from "@/components/ChatKitPanel";
+import { isChatTopic } from "@/lib/chat";
 
 export default function Page({
-  searchParams,
+  params,
 }: {
-  searchParams: {
-    session_id?: string;
-    secret?: string;
-  };
+  params: { topic: string };
 }) {
-  if (!searchParams.session_id || !searchParams.secret) {
-    return <div>Brak danych sesji</div>;
+  if (!isChatTopic(params.topic)) {
+    redirect("/");
   }
 
   return (
-    <ChatPage
-      session={{
-        id: searchParams.session_id,
-        client_secret: searchParams.secret,
-      }}
-    />
+    <main className="h-screen w-full">
+      <ChatKitPanel topic={params.topic} />
+    </main>
   );
 }

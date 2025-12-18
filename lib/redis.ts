@@ -1,20 +1,13 @@
-import { createClient } from "redis";
+import Redis from "ioredis";
 
-declare global {
-  // eslint-disable-next-line no-var
-  var redisClient: ReturnType<typeof createClient> | undefined;
-}
+let client: Redis | null = null;
 
-export const redis =
-  global.redisClient ??
-  createClient({
-    url: process.env.REDIS_URL,
-  });
-
-if (!redis.isOpen) {
-  await redis.connect();
-}
-
-if (process.env.NODE_ENV !== "production") {
-  global.redisClient = redis;
+export function redis() {
+  if (!client) {
+    if (!process.env.REDIS_URL) {
+      throw new Error("Missing REDIS_URL");
+    }
+    client = new Redis(process.env.REDIS_URL);
+  }
+  return client;
 }
