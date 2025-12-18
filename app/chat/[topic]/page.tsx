@@ -5,9 +5,13 @@ export default function ChatPage({
 }: {
   params: { topic: string };
 }) {
+  if (!params?.topic) {
+    return <div>ERROR: missing topic</div>;
+  }
+
   return (
     <div className="h-screen w-screen flex">
-      {/* 🔑 key WYMUSZA odmontowanie ChatKit przy zmianie topic */}
+      {/* ⬇️ TU JEST JEDYNE ŹRÓDŁO PRAWDY */}
       <ChatKitPanel key={params.topic} topic={params.topic} />
     </div>
   );

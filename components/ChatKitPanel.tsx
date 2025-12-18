@@ -3,10 +3,13 @@
 import { ChatKit, useChatKit } from "@openai/chatkit-react";
 
 export default function ChatKitPanel({ topic }: { topic: string }) {
+  if (!topic) {
+    return <div>ERROR: topic is undefined</div>;
+  }
+
   const { control } = useChatKit({
     api: {
       async getClientSecret() {
-        // 🔑 ZAWSZE pobieramy nową sesję dla danego topicu
         const res = await fetch(`/api/create-session/${topic}`, {
           method: "POST",
         });
