@@ -3,12 +3,7 @@ import { getSessionId } from "@/lib/session";
 import { getRedis } from "@/lib/redis";
 import { workflowIdForTopic } from "@/lib/chat";
 
-export async function POST(
-  _request: NextRequest,
-  context: { params: Promise<{ topic: string }> }
-): Promise<Response> {
-  const { topic } = await context.params;
-
+async function handle(topic: string) {
   const sessionId = await getSessionId();
   const redis = await getRedis();
 
@@ -16,10 +11,7 @@ export async function POST(
 
   const cached = await redis.get(key);
   if (cached) {
-    return new Response(
-      JSON.stringify({ client_secret: cached }),
-      { status: 200, headers: { "Content-Type": "application/json" } }
-    );
+    return Response.json({ client_secret: cached });
   }
 
   const res = await fetch("https://api.openai.com/v1/chatkit/sessions", {
@@ -37,17 +29,21 @@ export async function POST(
 
   if (!res.ok) {
     const text = await res.text();
-    return new Response(text, { status: 500 });
+    throw new Error(text);
   }
 
   const data = await res.json();
 
   await redis.set(key, data.client_secret, {
-    EX: 60 * 60 * 24, // 24h
+    EX: 60 * 60 * 24,
   });
 
-  return new Response(
-    JSON.stringify({ client_secret: data.client_secret }),
-    { status: 200, headers: { "Content-Type": "application/json" } }
-  );
+  return Response.json({ client_secret: data.client_secret });
 }
+
+export async function POST(
+  _req: NextRequest,
+  context: { params: Promise<{ topic: string }> }
+) {
+  const { topic } = await context.params;
+  return handle(topic
