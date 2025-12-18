@@ -1,16 +1,15 @@
-import './globals.css';
-import Script from 'next/script';
-import { ReactNode } from 'react';
+import "@openai/chatkit-react/styles.css";
+import "./globals.css";
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <html lang="en">
-      <body>
+    <html lang="pl">
+      <body className="h-screen w-screen overflow-hidden">
         {children}
-        <Script
-          src="https://cdn.platform.openai.com/deployments/chatkit/chatkit.js"
-          strategy="afterInteractive"
-        />
       </body>
     </html>
   );
